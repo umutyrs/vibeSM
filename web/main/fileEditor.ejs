@@ -1,0 +1,236 @@
+<%- await include('parts/header.ejs', locals) %>
+
+<!-- Page CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/codemirror.min.css" 
+    integrity="sha512-xIf9AdJauwKIVtrVRZ0i4nHP61Ogx9fSRAkCLecmE2dL/U8ioWpDvFCAy4dcfecN72HHB9+7FfQj3aiO68aaaw==" 
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="<%= resourcePath %>css/codemirror_lucario.css?txVer=<%= txAdminVersion %>">
+<style>
+    .cm-s-lucario {
+        font-size: 1.05rem !important;
+    }
+    .CodeMirror {
+        height: calc(100vh - 270px);
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    /* CodeMirror dialog styling */
+    .CodeMirror-dialog {
+        position: absolute;
+        left: 0; right: 0;
+        background: #2c2f35;
+        z-index: 15;
+        padding: .5em 1em;
+        overflow: hidden;
+        color: #fff;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .CodeMirror-dialog input {
+        border: 1px solid rgba(255,255,255,0.1);
+        outline: none;
+        background: #1e2024;
+        width: 20em;
+        color: inherit;
+        font-family: monospace;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+    .CodeMirror-dialog button {
+        font-size: 75%;
+        margin-left: 5px;
+        background: #3a3f47;
+        color: white;
+        border: none;
+        padding: 2px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .editor-controls {
+        background-color: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<!-- Hacky height adjustment for standalones -->
+<% if (!isWebInterface) { %>
+    <style>.CodeMirror { height: calc(100vh - 170px); }</style>
+<% } %>
+
+<div class="row justify-content-center">
+    <div class="col-lg-12 col-xl-11 mw-col8">
+        <!-- Control panel for editing files -->
+        <div class="editor-controls d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center flex-grow-1" style="max-width: 500px; gap: 10px;">
+                <span class="text-muted text-nowrap">Active File:</span>
+                <select id="fileSelect" class="form-control" style="background-color: #2c2f35; color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+                    <% for (const file of fileList) { %>
+                        <option value="<%= file %>" <%= file === activeFile ? 'selected' : '' %>>
+                            <%= file %>
+                        </option>
+                    <% } %>
+                </select>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+                <button type="button" id="fileEditor-save" class="btn btn-success btn-sm mr-2">
+                    <i class="icon-check"></i> Save (CTRL+S)
+                </button>
+                <button type="button" id="resource-restart" class="btn btn-outline-warning btn-sm" <%= disableRestart %>>
+                    <i class="icon-refresh"></i> Restart Resource
+                </button>
+            </div>
+        </div>
+
+        <!-- The editor textarea -->
+        <textarea id="codeMirrorTarget" style="height: calc(100vh - 270px); width: 100%; display: none;"
+            class="cms-s-lucario" name="code"><%= rawFile %></textarea>
+    </div>
+</div>
+
+<%- await include('parts/footer.ejs', locals) %>
+
+<!-- CodeMirror Core and Addons -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/codemirror.min.js" 
+    integrity="sha512-ZTpbCvmiv7Zt4rK0ltotRJVRaSBKFQHQTrwfs6DoYlBYzO1MA6Oz2WguC+LkV8pGiHraYLEpo7Paa+hoVbCfKw==" 
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="<%= resourcePath %>js/codeEditor/comment.js?txVer=<%= txAdminVersion %>"></script>
+<script src="<%= resourcePath %>js/codeEditor/searchcursor.js?txVer=<%= txAdminVersion %>"></script>
+<script src="<%= resourcePath %>js/codeEditor/dialog.js?txVer=<%= txAdminVersion %>"></script>
+<script src="<%= resourcePath %>js/codeEditor/search.js?txVer=<%= txAdminVersion %>"></script>
+
+<!-- CodeMirror Language Modes -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/mode/lua/lua.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/mode/yaml/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/mode/properties/properties.min.js"></script>
+
+<script>
+    const resourceName = '<%= resourceName %>';
+    const activeFile = '<%= activeFile %>';
+    const saveButton = document.getElementById('fileEditor-save');
+    const restartButton = document.getElementById('resource-restart');
+    const fileSelect = document.getElementById('fileSelect');
+
+    // Helper to determine the CodeMirror mode based on file name extension
+    function getCMMode(fileName) {
+        const ext = fileName.split('.').pop().toLowerCase();
+        if (ext === 'lua') return 'lua';
+        if (ext === 'js' || ext === 'ts' || ext === 'json') return 'javascript';
+        if (ext === 'yaml' || ext === 'yml') return 'yaml';
+        if (ext === 'css') return 'css';
+        if (ext === 'html') return 'htmlmixed';
+        if (ext === 'cfg' || ext === 'ini' || ext === 'txt') return 'properties';
+        return 'text/plain';
+    }
+
+    // Initialize CodeMirror on load
+    window.onload = function () {
+        const codeMirrorTarget = document.getElementById("codeMirrorTarget");
+        const mode = getCMMode(activeFile);
+        
+        window.CMInstance = CodeMirror.fromTextArea(codeMirrorTarget, {
+            mode: mode,
+            lineNumbers: true,
+            lineWrapping: true,
+            theme: "lucario"
+        });
+
+        // Set up shortcuts
+        window.addEventListener("keydown", (event) => {
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault();
+                saveButton.click();
+            } else if (event.ctrlKey && (event.key === ';' || event.key === '/')) {
+                event.preventDefault();
+                let commentOptions = { lineComment: "#" };
+                if (mode === 'lua') {
+                    commentOptions = { lineComment: "--" };
+                } else if (mode === 'javascript') {
+                    commentOptions = { lineComment: "//" };
+                } else if (mode === 'htmlmixed') {
+                    commentOptions = { lineComment: "<!--", blockCommentStart: "<!--", blockCommentEnd: "-->" };
+                } else if (mode === 'css') {
+                    commentOptions = { blockCommentStart: "/*", blockCommentEnd: "*/" };
+                } else if (mode === 'yaml') {
+                    commentOptions = { lineComment: "#" };
+                }
+                window.CMInstance.toggleComment(commentOptions);
+            }
+        });
+    };
+
+    // File Selection Dropdown Navigation
+    fileSelect.onchange = () => {
+        const selectedFile = fileSelect.value;
+        navigateParentTo('/server/file-editor?resource=' + encodeURIComponent(resourceName) + '&file=' + encodeURIComponent(selectedFile));
+    };
+
+    // Save Action
+    saveButton.onclick = () => {
+        const fileData = window.CMInstance.getValue();
+        const notify = $.notify({ message: '<p class="text-center"><i class="icon-refresh"></i> Saving...</p>' }, {});
+
+        txAdminAPI({
+            type: "POST",
+            url: '/fileEditor/save',
+            data: {
+                resource: resourceName,
+                file: activeFile,
+                fileData: fileData
+            },
+            success: function (data) {
+                if (checkApiLogoutRefresh(data)) return;
+                
+                notify.update('progress', 0);
+                notify.update('type', data.type || 'success');
+                notify.update('message', data.message || 'File saved successfully.');
+            },
+            error: function (xmlhttprequest, textstatus, message) {
+                notify.update('progress', 0);
+                notify.update('type', 'danger');
+                notify.update('message', message);
+            }
+        });
+    };
+
+    // Restart Resource Command
+    if (restartButton) {
+        restartButton.onclick = () => {
+            const notify = $.notify({ message: '<p class="text-center"><i class="icon-refresh"></i> Executing Command...</p>' }, {});
+            txAdminAPI({
+                type: "POST",
+                url: '/fxserver/commands',
+                data: {
+                    action: 'ensure_res',
+                    parameter: resourceName
+                },
+                success: function (data) {
+                    if (checkApiLogoutRefresh(data)) return;
+                    
+                    if (data.type !== 'error') {
+                        notify.update('progress', 0);
+                        notify.update('type', 'success');
+                        notify.update('message', 'Resource restarted successfully.');
+                    } else {
+                        notify.update('progress', 0);
+                        notify.update('type', 'danger');
+                        notify.update('message', data.msg || 'Failed to restart resource.');
+                    }
+                },
+                error: function (xmlhttprequest, textstatus, message) {
+                    notify.update('progress', 0);
+                    notify.update('type', 'danger');
+                    notify.update('message', message);
+                }
+            });
+        };
+    }
+</script>

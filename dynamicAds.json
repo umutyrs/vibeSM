@@ -1,0 +1,36 @@
+{
+    "login": [
+        {
+            "text": "DDoS protected & preconfigured FiveM vibeSM servers",
+            "logoLightMode": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+            "logoDarkMode": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+            "link": "http://zap-hosting.com/vibeSM3"
+        }
+    ],
+    "main": [
+        {
+            "text": "DDoS protected & preconfigured <br> FiveM vibeSM servers",
+            "logoLightMode": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+            "logoDarkMode": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+            "linkDesktop": "http://zap-hosting.com/vibeSM5",
+            "linkMobile": "http://zap-hosting.com/vibeSM7"
+        }
+    ],
+    "loginZap": [
+        {
+            "text": "DDoS protected & preconfigured FiveM vibeSM servers",
+            "logoLightMode": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+            "logoDarkMode": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+            "link": "http://zap-hosting.com/vibeSM3"
+        }
+    ],
+    "mainZap": [
+        {
+            "text": "DDoS protected & preconfigured <br> FiveM vibeSM servers",
+            "logoLightMode": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+            "logoDarkMode": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+            "linkDesktop": "http://zap-hosting.com/vibeSM5",
+            "linkMobile": "http://zap-hosting.com/vibeSM7"
+        }
+    ]
+}

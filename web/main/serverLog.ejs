@@ -1,0 +1,774 @@
+<%- await include('parts/header.ejs', locals) %>
+
+
+<style>
+    /* ═══════════════════════════════════════════════════════
+       vibeSM Cosmic Server Log — Frosted Cockpit Design
+       ═══════════════════════════════════════════════════════ */
+
+    .vibe-log-wrapper {
+        display: flex;
+        gap: 20px;
+        height: calc(100vh - 180px);
+        min-height: 400px;
+    }
+
+    .vibe-log-sidebar {
+        flex: 0 0 260px;
+        min-width: 240px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .vibe-log-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Sidebar Card */
+    .vibe-sidebar-card {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(18px) !important;
+        -webkit-backdrop-filter: blur(18px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 14px !important;
+        padding: 24px 20px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    /* Mode Indicator */
+    .vibe-mode-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 16px;
+    }
+    .vibe-mode-badge.live {
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: rgb(52, 211, 153);
+    }
+    .vibe-mode-badge.log {
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        color: rgb(251, 191, 36);
+    }
+    .vibe-mode-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        animation: vibePulse 2s infinite;
+    }
+    .vibe-mode-badge.live .vibe-mode-dot { background: rgb(52, 211, 153); }
+    .vibe-mode-badge.log .vibe-mode-dot { background: rgb(251, 191, 36); animation: none; }
+
+    @keyframes vibePulse {
+        0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4); }
+        50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+    }
+
+    /* Time Range Display */
+    .vibe-time-range {
+        padding: 12px 0;
+        margin-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .vibe-time-label {
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.35);
+        margin-bottom: 4px;
+    }
+    .vibe-time-value {
+        font-family: 'Space Grotesk', monospace;
+        font-size: 0.82rem;
+        color: rgba(255, 255, 255, 0.85);
+    }
+
+    /* Sidebar Buttons */
+    .vibe-sidebar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .vibe-btn-ghost {
+        flex: 1;
+        min-width: 100px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        color: rgba(255, 255, 255, 0.75);
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: center;
+    }
+    .vibe-btn-ghost:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+    }
+    .vibe-btn-ghost:active:not(:disabled) {
+        transform: scale(0.97);
+    }
+    .vibe-btn-ghost:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+    .vibe-btn-ghost.vibe-btn-accent {
+        border-color: rgba(244, 63, 94, 0.25);
+        color: rgba(244, 63, 94, 0.9);
+    }
+    .vibe-btn-ghost.vibe-btn-accent:hover:not(:disabled) {
+        background: rgba(244, 63, 94, 0.1);
+        border-color: rgba(244, 63, 94, 0.35);
+    }
+
+    /* Filters Section */
+    .vibe-filters-section {
+        flex: 1;
+        overflow-y: auto;
+    }
+    .vibe-section-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.3);
+        margin-bottom: 14px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .vibe-filter-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 0;
+    }
+    .vibe-filter-label {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.82rem;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 500;
+    }
+
+    /* Custom Toggle Switch */
+    .vibe-toggle {
+        position: relative;
+        width: 38px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+    .vibe-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .vibe-toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 20px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .vibe-toggle-slider::before {
+        content: "";
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        left: 2px;
+        bottom: 2px;
+        background: rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .vibe-toggle input:checked + .vibe-toggle-slider {
+        background: rgba(16, 185, 129, 0.2);
+        border-color: rgba(16, 185, 129, 0.35);
+    }
+    .vibe-toggle input:checked + .vibe-toggle-slider::before {
+        transform: translateX(18px);
+        background: rgb(52, 211, 153);
+        box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+    }
+
+    /* Mobile filter toggle */
+    .vibe-mobile-filter-toggle {
+        display: none;
+        margin-bottom: 12px;
+    }
+
+    /* Log Output Card */
+    .vibe-log-card {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(18px) !important;
+        -webkit-backdrop-filter: blur(18px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 14px !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .vibe-log-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .vibe-log-card-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .pre-log-content {
+        flex: 1;
+        margin: 0;
+        padding: 14px 18px;
+        font-size: 0.82rem;
+        line-height: 1.65;
+        overflow-y: auto;
+        background: rgba(5, 2, 10, 0.3) !important;
+        border: none !important;
+        border-radius: 0 !important;
+        font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace !important;
+        color: #eceff4 !important;
+    }
+
+    .nui-height {
+        height: calc(100vh - 170px);
+    }
+
+    /* Log Entry Styling */
+    .e-src {
+        font-weight: 700 !important;
+        padding: 1px 6px;
+        margin: 0 4px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.6);
+    }
+    .e-src-player {
+        color: rgb(129, 140, 248) !important;
+        font-weight: 700 !important;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        background: rgba(129, 140, 248, 0.08);
+        border-radius: 4px;
+        padding: 1px 6px;
+    }
+    .e-src-player:hover {
+        color: #ffffff !important;
+        background: rgba(129, 140, 248, 0.2);
+    }
+
+    /* Auto-scroll indicator */
+    #autoScrollDiv {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        z-index: 10;
+    }
+    #autoScrollBtn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(244, 63, 94, 0.15);
+        border: 1px solid rgba(244, 63, 94, 0.3);
+        backdrop-filter: blur(10px);
+        transition: all 0.2s ease;
+        text-decoration: none !important;
+    }
+    #autoScrollBtn:hover {
+        background: rgba(244, 63, 94, 0.25);
+        transform: scale(1.08);
+    }
+    #autoScrollBtn span {
+        display: block;
+        width: 2px;
+        height: 6px;
+        background: rgba(244, 63, 94, 0.9);
+        margin: 1px;
+        border-radius: 1px;
+        animation: vibeScrollPulse 1.4s infinite ease-in-out;
+    }
+    #autoScrollBtn span:nth-child(2) { animation-delay: 0.2s; }
+    #autoScrollBtn span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes vibeScrollPulse {
+        0%, 100% { transform: scaleY(0.6); opacity: 0.4; }
+        50% { transform: scaleY(1.4); opacity: 1; }
+    }
+
+    /* Responsive */
+    @media only screen and (max-width: 992px) {
+        .vibe-log-wrapper {
+            flex-direction: column;
+            height: auto;
+        }
+        .vibe-log-sidebar {
+            flex: none;
+        }
+        .vibe-sidebar-card {
+            height: auto;
+        }
+        .vibe-mobile-filter-toggle {
+            display: block;
+        }
+    }
+</style>
+
+
+<div class="vibe-log-wrapper">
+    <!-- ═══ Sidebar ═══ -->
+    <div class="vibe-log-sidebar">
+        <div class="vibe-sidebar-card">
+            <!-- Mode Indicator -->
+            <div class="vibe-mode-badge live" id="modeBadge">
+                <span class="vibe-mode-dot"></span>
+                <span id="modeLabel">LIVE</span>
+            </div>
+
+            <!-- Time Range -->
+            <div class="vibe-time-range">
+                <div style="margin-bottom: 8px;">
+                    <div class="vibe-time-label">From</div>
+                    <div class="vibe-time-value" id="histLogStart">--</div>
+                </div>
+                <div>
+                    <div class="vibe-time-label">To</div>
+                    <div class="vibe-time-value" id="histLogEnd">--</div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="vibe-sidebar-actions">
+                <button type="button" class="vibe-btn-ghost" id="viewOlderBtn">
+                    &laquo; Older
+                </button>
+                <button type="button" class="vibe-btn-ghost" id="viewNewerBtn">
+                    Newer &raquo;
+                </button>
+            </div>
+            <div class="vibe-sidebar-actions">
+                <button type="button" class="vibe-btn-ghost vibe-btn-accent" id="clearConsole">
+                    Clear
+                </button>
+            </div>
+
+            <!-- Mobile filter toggle -->
+            <button class="vibe-btn-ghost vibe-mobile-filter-toggle"
+                data-toggle="collapse" href="#filter-control-container"
+                role="button" aria-expanded="false" aria-controls="filter-control-container">
+                Toggle Filters
+            </button>
+
+            <!-- Filters -->
+            <div class="vibe-filters-section" id="filter-control-container">
+                <div class="vibe-section-title">Event Filters</div>
+
+                <div class="vibe-filter-item">
+                    <span class="vibe-filter-label">Player Joins</span>
+                    <label class="vibe-toggle">
+                        <input class="e-filter-sw" type="checkbox" checked data-e-type="PlayerJoin">
+                        <span class="vibe-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="vibe-filter-item">
+                    <span class="vibe-filter-label">Player Leaves</span>
+                    <label class="vibe-toggle">
+                        <input class="e-filter-sw" type="checkbox" checked data-e-type="playerDropped">
+                        <span class="vibe-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="vibe-filter-item">
+                    <span class="vibe-filter-label">Chat Messages</span>
+                    <label class="vibe-toggle">
+                        <input class="e-filter-sw" type="checkbox" checked data-e-type="ChatMessage">
+                        <span class="vibe-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="vibe-filter-item">
+                    <span class="vibe-filter-label">Player Death</span>
+                    <label class="vibe-toggle">
+                        <input class="e-filter-sw" type="checkbox" checked data-e-type="DeathNotice">
+                        <span class="vibe-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="vibe-filter-item">
+                    <span class="vibe-filter-label">Menu Actions</span>
+                    <label class="vibe-toggle">
+                        <input class="e-filter-sw" type="checkbox" checked data-e-type="MenuEvent">
+                        <span class="vibe-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="vibe-filter-item">
+                    <span class="vibe-filter-label">Explosions</span>
+                    <label class="vibe-toggle">
+                        <input class="e-filter-sw" type="checkbox" checked data-e-type="explosionEvent">
+                        <span class="vibe-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="vibe-filter-item">
+                    <span class="vibe-filter-label">Commands</span>
+                    <label class="vibe-toggle">
+                        <input class="e-filter-sw" type="checkbox" checked data-e-type="CommandExecuted">
+                        <span class="vibe-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="vibe-filter-item">
+                    <span class="vibe-filter-label">System Events</span>
+                    <label class="vibe-toggle">
+                        <input class="e-filter-sw" type="checkbox" checked data-e-type="System">
+                        <span class="vibe-toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Log Output ═══ -->
+    <div class="vibe-log-main">
+        <div class="vibe-log-card">
+            <div class="vibe-log-card-header">
+                <span class="vibe-log-card-title">Server Log Output</span>
+            </div>
+            <pre id="logContainer" class="thin-scroll pre-log-content <%= isWebInterface ? '' : 'nui-height' %>"></pre>
+            <div id="autoScrollDiv">
+                <a id="autoScrollBtn" class="d-none" href="#"><span></span><span></span><span></span></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden legacy button (unused but referenced in JS) -->
+<button type="button" id="showLogsModalBtn" class="d-none">Download Log</button>
+
+
+<%- await include('parts/footer.ejs', locals) %>
+
+
+<script>
+    (function () {
+        //============================================== Moved from main.js
+        function showPlayerByMutexNetid(mutexNetid) {
+            const [mutex, netid] = mutexNetid.split(/[_#]/, 2);
+            return window.parent.postMessage({ type: 'openPlayerModal', ref: { mutex, netid } });
+        }
+
+        const getSocket = (rooms) => {
+            const socketOpts = {
+                transports: ['polling'],
+                upgrade: false,
+                query: { rooms }
+            };
+
+            const socket = isWebInterface
+                ? io({ ...socketOpts, path: '/socket.io' })
+                : io('monitor', { ...socketOpts, path: '/WebPipe/socket.io' });
+
+            socket.on('logout', () => {
+                console.log('Received logout command from websocket.');
+                window.parent.postMessage({ type: 'logoutNotice' });
+            });
+
+            return socket;
+        }
+
+        //============================================== Preparing variables
+        const autoScrollBtn = document.getElementById("autoScrollBtn");
+        const logContainer = document.getElementById("logContainer");
+        const modeLabel = document.getElementById("modeLabel");
+        const modeBadge = document.getElementById("modeBadge");
+        const histLogStart = document.getElementById("histLogStart");
+        const histLogEnd = document.getElementById("histLogEnd");
+        const viewOlderBtn = document.getElementById("viewOlderBtn");
+        const viewNewerBtn = document.getElementById("viewNewerBtn");
+        const MAX_HISTORY_SIZE = 500;
+        const frameTimeOptions = {weekday: 'long', hour: '2-digit', minute: '2-digit'};
+        const eventTimeOptions = {hour: '2-digit', minute: '2-digit', second: '2-digit'};
+        let logStartTs, logEndTs;
+        let eventFilters = {};
+        let autoScroll = true;
+        const pageSocket = getSocket('serverlog');
+        const logContainerSpinner = `<div style="height: 90%;" class="d-flex"><div style="margin: auto;">${SPINNER_HTML}</div></div>`;
+
+
+        //============================================== Responsivity stuff
+        const mql = window.matchMedia('(max-width: 992px)');
+        const targetEl = document.getElementById('filter-control-container');
+        if (mql.matches) {
+          targetEl.classList.add('collapse');
+        }
+
+        mql.addEventListener("change", (e) => {
+            if (e.matches && !targetEl.classList.contains('collapse')) {
+              return targetEl.classList.add('collapse');
+            }
+
+            if (targetEl.classList.contains('collapse')) targetEl.classList.remove('collapse');
+        })
+
+        //============================================== Socket Stuff
+        pageSocket.on('error', (error) => {
+            console.log('Page Socket.IO', error)
+        });
+        pageSocket.on('connect', () => {
+            console.log("Page Socket.IO Connected.");
+            logContainer.innerHTML = '';
+        });
+        pageSocket.on('disconnect', (message) => {
+            console.log("Page Socket.IO Disonnected:", message);
+        });
+        pageSocket.on('logData', processLog);
+
+        //============================================== Mode selection
+        function goLive() {
+            logContainer.innerHTML = logContainerSpinner;
+            modeBadge.classList.remove('log');
+            modeBadge.classList.add('live');
+            modeLabel.textContent = 'LIVE';
+            viewOlderBtn.disabled = false;
+            viewNewerBtn.disabled = true;
+            if (!pageSocket.connected) pageSocket.connect();
+        }
+
+        function goHistory(direction) {
+            let ref;
+            if(direction === 'older'){
+                ref = logStartTs;
+            }else if(direction === 'newer'){
+                ref = logEndTs;
+            }else{
+                throw new Error(`unknown direction`);
+            }
+            pageSocket.disconnect();
+            logContainer.innerHTML = logContainerSpinner;
+            modeBadge.classList.remove('live');
+            modeBadge.classList.add('log');
+            modeLabel.textContent = 'LOG';
+            viewOlderBtn.disabled = false;
+            viewNewerBtn.disabled = false;
+
+            //Get log from API
+            txAdminAPI({
+                type: 'GET',
+                url: `/serverLog/partial?dir=${direction}&ref=${ref}`,
+                timeout: REQ_TIMEOUT_MEDIUM,
+                success: function (data) {
+                    logContainer.innerHTML = '';
+                    if(!Array.isArray(data.log)){
+                        logContainer.innerHTML = 'Failed to load log. Please refresh the page and try again.';
+                        return;
+                    }
+                    if(data.boundry){
+                        if(direction === 'older'){
+                            if(!data.log.length){
+                                logContainer.innerHTML = 'No more log entries to show.';
+                            }else{
+                                processLog(data.log);
+                            }
+                            viewOlderBtn.disabled = true;
+                        }else{
+                            goLive();
+                        }
+                        return;
+                    }
+                    processLog(data.log);
+                },
+                error: function (xmlhttprequest, textstatus, message) {
+                    logContainer.innerHTML = 'Failed to load log. Please refresh the page and try again.';
+                },
+            });
+        }
+
+        goLive();
+        
+
+        //============================================== Handling filters
+        if(typeof window.localStorage.eventFilters !== 'undefined'){
+            try {
+                const fromStorage = JSON.parse(window.localStorage.eventFilters);
+                console.log('Filters from storage:', fromStorage);
+                if(typeof fromStorage === 'object' && fromStorage !== null) {
+                    eventFilters = fromStorage;
+                }
+            } catch (error) {
+                console.error('Failed to process window.localStorage.eventFilters');
+            }
+        }
+
+        const allSwitches = document.querySelectorAll('.e-filter-sw');
+        allSwitches.forEach((sw) => {
+            sw.addEventListener('change', eventFiltersChanged);
+            if(typeof eventFilters[sw.dataset.eType] === 'undefined'){
+                eventFilters[sw.dataset.eType] = true;
+            }
+            sw.checked = eventFilters[sw.dataset.eType];
+        });
+        window.localStorage.eventFilters = JSON.stringify(eventFilters);
+
+        const getShowTypes = () => Object.keys(eventFilters)
+            .filter(fn => eventFilters[fn])
+            .flatMap(fn => {
+                if (fn === 'PlayerJoin') return ['playerJoining', 'playerJoinDenied'];
+                if(fn === 'System') return ['LoggerStarted', 'DebugMessage'];
+                return fn;
+            });
+        
+        function eventFiltersChanged(caller){
+            eventFilters[caller.target.dataset.eType] = caller.target.checked;
+            window.localStorage.eventFilters = JSON.stringify(eventFilters);
+            const showTypes = getShowTypes();
+            console.log('showTypes:', showTypes);
+
+            logContainer.childNodes.forEach(line => {
+                if(showTypes.includes(line.dataset.eType)){
+                    line.classList.remove('d-none');
+                }else{
+                    line.classList.add('d-none');
+                }
+            });
+        }
+
+
+        //============================================== AutoScroll Things
+        const scrollBottom = () => {
+            if (autoScroll) logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        const autoscrollToggle = (status) => {
+            autoScroll = status
+            if(autoScroll){
+                autoScrollBtn.classList.add('d-none');
+            }else{
+                autoScrollBtn.classList.remove('d-none');
+            }
+            scrollBottom();
+        }
+        logContainer.addEventListener('scroll',function(){
+                const scrollTop = logContainer.scrollTop;
+                const scrollHeight = logContainer.scrollHeight;
+                const offsetHeight = logContainer.offsetHeight;
+                const contentHeight = scrollHeight - offsetHeight;
+                if (scrollTop < contentHeight) {
+                    autoscrollToggle(false);
+                } else if(scrollTop === contentHeight){
+                    autoscrollToggle(true);
+                }
+            }
+        )
+        autoScrollBtn.addEventListener("click", (event) => {
+            event.preventDefault();
+            autoscrollToggle(true);
+        });
+
+
+        //============================================== Buttons
+        document.getElementById("viewOlderBtn").addEventListener("click", function () {
+            goHistory('older');
+        });
+        document.getElementById("viewNewerBtn").addEventListener("click", function () {
+            goHistory('newer');
+        });
+        document.getElementById("clearConsole").addEventListener("click", function () {
+            logContainer.innerHTML = "";
+        });
+        document.getElementById("showLogsModalBtn").addEventListener("click", function () {
+            //TODO: add modal stuff
+        });
+
+
+        //============================================== Log processor
+        function processLog(events) {
+            console.log(`Events: ${events.length}`);
+            const showTypes = getShowTypes();
+            //For every new entry
+            for (let i = 0; i < events.length; i++) {
+                const event = events[i];
+                logEndTs = event.ts;
+
+                //Line
+                const lineElement = document.createElement('div');
+                lineElement.dataset.eTs = event.ts;
+                lineElement.dataset.eType = event.type;
+                if(!showTypes.includes(event.type)){
+                    lineElement.classList.add('d-none');
+                }
+
+                //Time
+                const localeTime = new Date(event.ts).toLocaleTimeString(window.navigator.language, eventTimeOptions);
+                const timeNode = document.createElement('span');
+                timeNode.textContent = `[${localeTime}]`;
+                timeNode.classList.add('text-muted');
+                lineElement.appendChild(timeNode);
+
+                //Source
+                const sourceNode = document.createElement('strong');
+                sourceNode.classList.add('e-src');
+                if(event.src.id){
+                    const [mutex, netid] = event.src.id.split('#', 2);
+                    sourceNode.classList.add('e-src-player');
+                    sourceNode.addEventListener('click', ()=>{ showPlayerByMutexNetid(`${mutex}_${netid}`) });
+                    sourceNode.textContent = `[${netid}] ${event.src.name}`;
+                }else{
+                    sourceNode.textContent = event.src.name;
+                }
+                lineElement.appendChild(sourceNode);
+
+                //Message
+                const msgNode = document.createTextNode(event.msg);
+                lineElement.appendChild(msgNode);
+                
+                //Appending & capping log
+                logContainer.appendChild(lineElement)
+                if(logContainer.childNodes.length > MAX_HISTORY_SIZE){
+                    logContainer.removeChild(logContainer.childNodes[0])
+                }
+            }
+
+            //Process times
+            logStartTs = parseInt(logContainer.childNodes[0].dataset.eTs);
+            const logStartDate = new Date(logStartTs);
+            const logEndDate = new Date(logEndTs);
+            histLogStart.textContent = logStartDate.toLocaleString(window.navigator.language, frameTimeOptions);
+            histLogEnd.textContent = logEndDate.toLocaleString(window.navigator.language, frameTimeOptions);
+
+            //AutoScroll
+            scrollBottom();
+        }
+    })();
+</script>

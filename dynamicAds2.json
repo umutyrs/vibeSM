@@ -1,0 +1,18 @@
+{
+    "login": {
+        "img": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+        "url": "http://zap-hosting.com/vibeSM3"
+    },
+    "main": {
+        "img": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+        "url": "http://zap-hosting.com/vibeSM5"
+    },
+    "loginZap": {
+        "img": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+        "url": "http://zap-hosting.com/vibeSM3"
+    },
+    "mainZap": {
+        "img": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
+        "url": "http://zap-hosting.com/vibeSM5"
+    }
+}

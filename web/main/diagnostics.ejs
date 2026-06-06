@@ -1,0 +1,570 @@
+<%- await include('parts/header.ejs', locals) %>
+
+
+<style>
+    /* ═══════════════════════════════════════════════════════
+       vibeSM Cosmic Diagnostics — Frosted Cockpit Design
+       ═══════════════════════════════════════════════════════ */
+
+    .vibe-diag-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 10px 0 30px;
+    }
+
+    .vibe-diag-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    @media (max-width: 1100px) {
+        .vibe-diag-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Panel Card */
+    .vibe-diag-panel {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .vibe-diag-panel:hover {
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .vibe-diag-panel-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 22px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .vibe-diag-panel-icon {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .vibe-diag-panel-icon.red { background: rgb(244, 63, 94); box-shadow: 0 0 8px rgba(244, 63, 94, 0.3); }
+    .vibe-diag-panel-icon.blue { background: rgb(99, 102, 241); box-shadow: 0 0 8px rgba(99, 102, 241, 0.3); }
+    .vibe-diag-panel-icon.green { background: rgb(16, 185, 129); box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+    .vibe-diag-panel-icon.amber { background: rgb(245, 158, 11); box-shadow: 0 0 8px rgba(245, 158, 11, 0.3); }
+
+    .vibe-diag-panel-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .vibe-diag-panel-body {
+        padding: 20px 22px;
+    }
+
+    /* Data Row */
+    .vibe-data-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 5px 0;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.82rem;
+        line-height: 1.6;
+    }
+    .vibe-data-key {
+        color: rgba(255, 255, 255, 0.45);
+        font-weight: 600;
+        flex-shrink: 0;
+        min-width: 100px;
+    }
+    .vibe-data-val {
+        color: rgba(255, 255, 255, 0.9);
+        font-family: 'JetBrains Mono', 'Consolas', monospace;
+        font-size: 0.78rem;
+        word-break: break-all;
+    }
+    .vibe-data-val code {
+        background: rgba(255, 255, 255, 0.04);
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: rgb(244, 114, 182);
+    }
+
+    /* Tree Structure */
+    .vibe-tree {
+        padding-left: 16px;
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        margin-left: 8px;
+        margin-top: 4px;
+    }
+    .vibe-tree-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 3px 0;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.78rem;
+    }
+    .vibe-tree-key {
+        color: rgba(255, 255, 255, 0.4);
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    .vibe-tree-val {
+        color: rgba(255, 255, 255, 0.8);
+        font-family: 'JetBrains Mono', 'Consolas', monospace;
+        font-size: 0.75rem;
+        word-break: break-all;
+    }
+
+    /* Section Title inside panel */
+    .vibe-diag-section {
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.3);
+        margin-top: 16px;
+        margin-bottom: 8px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .vibe-diag-section:first-child {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
+    }
+
+    /* Badge */
+    .vibe-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .vibe-badge-success {
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        color: rgb(52, 211, 153);
+    }
+    .vibe-badge-danger {
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+        color: rgb(248, 113, 113);
+    }
+    .vibe-badge-warning {
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+        color: rgb(251, 191, 36);
+    }
+    .vibe-badge-info {
+        background: rgba(99, 102, 241, 0.12);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        color: rgb(165, 180, 252);
+    }
+
+    /* Alert inside panel */
+    .vibe-diag-alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 14px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 500;
+    }
+    .vibe-diag-alert-danger {
+        background: rgba(239, 68, 68, 0.06);
+        border: 1px solid rgba(239, 68, 68, 0.15);
+        color: rgb(248, 113, 113);
+    }
+
+    /* Process blocks */
+    .vibe-process-block {
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .vibe-process-block:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    /* Report button area */
+    .vibe-report-actions {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .vibe-btn {
+        padding: 9px 18px;
+        border-radius: 8px;
+        border: none;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .vibe-btn:active { transform: scale(0.97); }
+    .vibe-btn-outline {
+        background: rgba(99, 102, 241, 0.08);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        color: rgb(165, 180, 252);
+    }
+    .vibe-btn-outline:hover {
+        background: rgba(99, 102, 241, 0.15);
+        color: #ffffff;
+    }
+
+    /* Execution time footer */
+    .vibe-diag-footer {
+        text-align: center;
+        padding: 16px 0 0;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Report ID code styling */
+    .reportIdCode {
+        font-size: 1.75rem;
+        letter-spacing: 0.65rem;
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 0.25rem 0.1rem 0.25rem 0.85rem;
+        text-align: center;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgb(244, 114, 182);
+    }
+</style>
+
+
+<%
+    // Defensive helpers to prevent undefined property crashes
+    const _txadmin = typeof txadmin !== 'undefined' ? txadmin : (typeof vibesm !== 'undefined' ? vibesm : {});
+    const _txEnv = _txadmin.txEnv || _txadmin.vibeEnv || {};
+    const _txHostConfig = _txadmin.txHostConfig || _txadmin.vibeHostConfig || {};
+    const _monitor = _txadmin.monitor || { hbFails: { http: '--', fd3: '--' }, restarts: { bootTimeout: '--', close: '--', heartBeat: '--', healthCheck: '--', both: '--' } };
+    const _performance = _txadmin.performance || {};
+    const _memoryUsage = _txadmin.memoryUsage || {};
+    const _logger = _txadmin.logger || {};
+%>
+
+<div class="vibe-diag-wrapper">
+    <div class="vibe-diag-grid">
+
+        <!-- ═══ Left Column ═══ -->
+        <div>
+            <!-- Environment Card -->
+            <div class="vibe-diag-panel" style="margin-bottom: 20px;">
+                <div class="vibe-diag-panel-header">
+                    <span class="vibe-diag-panel-icon green"></span>
+                    <span class="vibe-diag-panel-title">Environment</span>
+                </div>
+                <div class="vibe-diag-panel-body">
+                    <% if (host.error) { %>
+                        <div class="vibe-diag-alert vibe-diag-alert-danger"><%- host.error %></div>
+                    <% } else { %>
+                        <div class="vibe-data-row"><span class="vibe-data-key">Node</span><span class="vibe-data-val"><%= host.static.nodeVersion %></span></div>
+                        <div class="vibe-data-row"><span class="vibe-data-key">OS</span><span class="vibe-data-val"><%= host.static.osDistro %></span></div>
+                        <div class="vibe-data-row"><span class="vibe-data-key">Username</span><span class="vibe-data-val"><%= host.static.username %></span></div>
+                        <div class="vibe-data-row"><span class="vibe-data-key">CPU Model</span><span class="vibe-data-val"><%- host.static.cpu.manufacturer %> <%- host.static.cpu.brand %></span></div>
+                        <div class="vibe-data-row"><span class="vibe-data-key">CPU Stats</span><span class="vibe-data-val"><%- host.static.cpu.physicalCores %>c/<%- host.static.cpu.cores %>t — <%- host.static.cpu.speedMin %> GHz <%- host.static.cpu.clockWarning %></span></div>
+                        <% if (host.dynamic) { %>
+                            <div class="vibe-data-row"><span class="vibe-data-key">CPU Usage</span><span class="vibe-data-val"><%= host.dynamic.cpuUsage %>%</span></div>
+                            <div class="vibe-data-row"><span class="vibe-data-key">Memory</span><span class="vibe-data-val"><%= host.dynamic.memory.usage %>% (<%= host.dynamic.memory.used.toFixed(2) %>/<%= host.dynamic.memory.total.toFixed(2) %>)</span></div>
+                        <% } else { %>
+                            <div class="vibe-data-row"><span class="vibe-data-key">Dynamic</span><span class="vibe-data-val" style="color: rgba(255,255,255,0.35);">Not available</span></div>
+                        <% } %>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- vibeSM Runtime Card -->
+            <div class="vibe-diag-panel" style="margin-bottom: 20px;">
+                <div class="vibe-diag-panel-header">
+                    <span class="vibe-diag-panel-icon red"></span>
+                    <span class="vibe-diag-panel-title">vibeSM Runtime</span>
+                </div>
+                <div class="vibe-diag-panel-body">
+                    <div class="vibe-data-row"><span class="vibe-data-key">Uptime</span><span class="vibe-data-val"><%= _txadmin.uptime || '--' %></span></div>
+                    <div class="vibe-data-row"><span class="vibe-data-key">Versions</span><span class="vibe-data-val">v<%= typeof txAdminVersion !== 'undefined' ? txAdminVersion : (typeof vibeSMVersion !== 'undefined' ? vibeSMVersion : '--') %> / b<%= typeof fxServerVersion !== 'undefined' ? fxServerVersion : '--' %></span></div>
+                    <div class="vibe-data-row"><span class="vibe-data-key">Database Size</span><span class="vibe-data-val"><%= _txadmin.databaseFileSize || '--' %></span></div>
+
+                    <div class="vibe-diag-section">Environment Paths</div>
+                    <div class="vibe-tree">
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">FXServer</span><span class="vibe-tree-val"><%= _txEnv.fxsPath || _txEnv.fxServerPath || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Profile</span><span class="vibe-tree-val"><%= _txEnv.profilePath || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Defaults</span><span class="vibe-tree-val"><%= (_txHostConfig.defaults && _txHostConfig.defaults.length > 0) ? _txHostConfig.defaults.join(', ') : '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Interface</span><span class="vibe-tree-val"><%= _txHostConfig.netInterface || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Provider</span><span class="vibe-tree-val"><%= _txHostConfig.providerName || '--' %></span></div>
+                    </div>
+
+                    <div class="vibe-diag-section">Monitor</div>
+                    <div class="vibe-tree">
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">HB Fails</span><span class="vibe-tree-val">HTTP <%= _monitor.hbFails.http %> / FD3 <%= _monitor.hbFails.fd3 %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Restarts</span><span class="vibe-tree-val">BT <%= _monitor.restarts.bootTimeout %> / CL <%= _monitor.restarts.close %> / HB <%= _monitor.restarts.heartBeat %> / HC <%= _monitor.restarts.healthCheck %> / BO <%= _monitor.restarts.both %></span></div>
+                    </div>
+
+                    <div class="vibe-diag-section">Performance Times</div>
+                    <div class="vibe-tree">
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">BanCheck</span><span class="vibe-tree-val"><%= _performance.banCheck || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">WhitelistCheck</span><span class="vibe-tree-val"><%= _performance.whitelistCheck || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">PlayersTable</span><span class="vibe-tree-val"><%= _performance.playersTableSearch || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">HistoryTable</span><span class="vibe-tree-val"><%= _performance.historyTableSearch || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">DatabaseSave</span><span class="vibe-tree-val"><%= _performance.databaseSave || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">PerfCollection</span><span class="vibe-tree-val"><%= _performance.perfCollection || '--' %></span></div>
+                    </div>
+
+                    <div class="vibe-diag-section">Memory</div>
+                    <div class="vibe-tree">
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Heap</span><span class="vibe-tree-val"><%= _memoryUsage.heap_used || '--' %> / <%= _memoryUsage.heap_limit || '--' %> (<%= _memoryUsage.heap_pct || '0' %>%)</span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Physical</span><span class="vibe-tree-val"><%= _memoryUsage.physical || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Peak Alloc.</span><span class="vibe-tree-val"><%= _memoryUsage.peak_malloced || '--' %></span></div>
+                    </div>
+
+                    <div class="vibe-diag-section">Logger Status</div>
+                    <div class="vibe-tree">
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Storage Size</span><span class="vibe-tree-val"><%= _logger.storageSize || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Admin</span><span class="vibe-tree-val"><%= _logger.statusAdmin || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">FXServer</span><span class="vibe-tree-val"><%= _logger.statusFXServer || '--' %></span></div>
+                        <div class="vibe-tree-row"><span class="vibe-tree-key">Server</span><span class="vibe-tree-val"><%= _logger.statusServer || '--' %></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution time -->
+            <div class="vibe-diag-footer"><%- message %></div>
+        </div>
+
+        <!-- ═══ Right Column ═══ -->
+        <div>
+            <!-- Diagnostics Report Card -->
+            <div class="vibe-diag-panel" style="margin-bottom: 20px;">
+                <div class="vibe-diag-panel-header">
+                    <span class="vibe-diag-panel-icon blue"></span>
+                    <span class="vibe-diag-panel-title">Diagnostics Report</span>
+                </div>
+                <div class="vibe-diag-panel-body">
+                    <div class="vibe-report-actions">
+                        <div style="flex: 1; font-size: 0.82rem; color: rgba(255, 255, 255, 0.55);">
+                            To receive support, it is recommended that you send the diagnostics data directly to the Support Team.
+                        </div>
+                        <button class="vibe-btn vibe-btn-outline" type="button" onclick="showReportModal()">
+                            Review & Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FXServer Info Card -->
+            <div class="vibe-diag-panel" style="margin-bottom: 20px;">
+                <div class="vibe-diag-panel-header">
+                    <span class="vibe-diag-panel-icon amber"></span>
+                    <span class="vibe-diag-panel-title">FXServer /info.json</span>
+                </div>
+                <div class="vibe-diag-panel-body">
+                    <% if (fxserver.versionMismatch) { %>
+                        <div class="vibe-diag-alert vibe-diag-alert-danger">
+                            <strong>Version mismatch!</strong> If you just updated FXServer, restart vibeSM. Otherwise, FXServer was already running before vibeSM started.
+                        </div>
+                    <% } %>
+                    <% if (fxserver.error !== false) { %>
+                        <%- fxserver.error %>
+                    <% } else { %>
+                        <div class="vibe-data-row"><span class="vibe-data-key">Status</span><span class="vibe-data-val"><span class="vibe-badge vibe-badge-<%= fxserver.statusColor === 'success' ? 'success' : (fxserver.statusColor === 'danger' ? 'danger' : 'warning') %>"><%= fxserver.status %></span></span></div>
+                        <div class="vibe-data-row"><span class="vibe-data-key">Version</span><span class="vibe-data-val"><%= fxserver.version %></span></div>
+                        <div class="vibe-data-row"><span class="vibe-data-key">Resources</span><span class="vibe-data-val"><%= fxserver.resources %></span></div>
+                        <div class="vibe-data-row"><span class="vibe-data-key">OneSync</span><span class="vibe-data-val"><%= fxserver.onesync %></span></div>
+                        <div class="vibe-data-row"><span class="vibe-data-key">Max Clients</span><span class="vibe-data-val"><%= fxserver.maxClients %></span></div>
+                        <div class="vibe-data-row"><span class="vibe-data-key">Version</span><span class="vibe-data-val"><%= fxserver.txAdminVersion %></span></div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Processes Card -->
+            <div class="vibe-diag-panel">
+                <div class="vibe-diag-panel-header">
+                    <span class="vibe-diag-panel-icon green"></span>
+                    <span class="vibe-diag-panel-title">Processes</span>
+                </div>
+                <div class="vibe-diag-panel-body">
+                    <% if (!proccesses.length) { %>
+                        <div style="color: rgba(255,255,255,0.4); font-size: 0.82rem;">
+                            Failed to retrieve process data. Check the terminal for more information.
+                        </div>
+                    <% } else { %>
+                        <% for (const process of proccesses) { %>
+                            <div class="vibe-process-block">
+                                <div class="vibe-data-row"><span class="vibe-data-key">Process</span><span class="vibe-data-val">(<%= process.pid %>) <%= process.name %></span></div>
+                                <div class="vibe-data-row"><span class="vibe-data-key">Parent</span><span class="vibe-data-val"><%= process.ppid %></span></div>
+                                <div class="vibe-data-row"><span class="vibe-data-key">Memory</span><span class="vibe-data-val"><%= process.memory.toFixed(2) %> MB</span></div>
+                                <div class="vibe-data-row"><span class="vibe-data-key">CPU</span><span class="vibe-data-val"><%= process.cpu.toFixed(2) %>%</span></div>
+                            </div>
+                        <% } %>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<%- await include('parts/footer.ejs', locals) %>
+
+<!-- Submit Report modal -->
+<div class="modal fade" id="modReport" tabindex="-1" role="dialog" aria-labelledby="modReport-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modReport-title">Send Diagnostics Data</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Spinner -->
+                <div class="d-none" id="modReport-spinnerBody">
+                    <div style="min-height: 125px;">
+                        <div class="txSpinner">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Review -->
+                <div class="d-none" id="modReport-infoBody">
+                    <p>
+                        This <i>optional</i> feature sends a diagnostics report to the support team, and may be required to diagnose a wide range of server issues. <br>
+                        After sending the data, you will receive a Report ID you can send in the support channels.
+                    </p>
+                    <ul style="padding-inline-start: 1rem;">
+                        <li>
+                            <strong>Which data will be sent?</strong>
+                            <ul style="padding-inline-start: 1rem;">
+                                <li>All diagnostics page data</li>
+                                <li>Recent system, live console and server log</li>
+                                <li>Environment variables</li>
+                                <li>Server performance (dashboard chart) data</li>
+                                <li>Player database statistics</li>
+                                <li>Settings (no bot token)</li>
+                                <li>List of admins (no passwords/hashes)</li>
+                                <li>List of files/folders in server data and monitor folders</li>
+                                <li>Config files in server data folder</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Who can access the data?</strong> <br>
+                            The data will be available for up to 24 hours to the support team.
+                        </li>
+                        <li>
+                            <strong>Sensitive Information Protection:</strong> <br>
+                            <ul style="padding-inline-start: 1rem;">
+                                <li><strong>Settings:</strong> the Discord Bot Token will be removed</li>
+                                <li><strong>Admin List:</strong> the password hashes will not be sent</li>
+                                <li><strong>Env Vars:</strong> parameters with <code>key, license, pass, private, secret, token</code> in their name will be masked.</li>
+                                <li><strong>CFG Files:</strong> known secret parameters will be masked (ex license, mysql string, tebex secret, webhooks, etc).</li>
+                                <li><strong>Logs:</strong> any identifiable IPv4 address in logs will be masked.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Result Success -->
+                <div class="d-none" id="modReport-resultSuccessBody">
+                    <div class="text-center">
+                        <h2>Report ID: <code class="reportIdCode" id="modReport-reportId">??????</code></h2>
+                    </div>
+                </div>
+
+                <!-- Result Error -->
+                <div class="d-none" id="modReport-resultErrorBody">
+                    <div class="text-center">
+                        <h4 class="text-danger" id="modReport-resultErrorMessage"></h4>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="modal-footer text-center">
+                <div class="mx-auto">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    &nbsp;
+                    &nbsp;
+                    <button type="button" class="btn btn-success" id="modReport-saveBtn">Agree & Send Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    const els = {
+        modal: document.getElementById('modReport'),
+        infoBody: document.getElementById('modReport-infoBody'),
+        spinnerBody: document.getElementById('modReport-spinnerBody'),
+        resultSuccessBody: document.getElementById('modReport-resultSuccessBody'),
+        resultErrorBody: document.getElementById('modReport-resultErrorBody'),
+        resultErrorMessage: document.getElementById('modReport-resultErrorMessage'),
+        saveBtn: document.getElementById('modReport-saveBtn'),
+        reportId: document.getElementById('modReport-reportId'),
+    }
+
+    function showReportModal() {
+        els.infoBody.classList.remove('d-none');
+        els.resultSuccessBody.classList.add('d-none');
+        els.resultErrorBody.classList.add('d-none');
+        els.spinnerBody.classList.add('d-none');
+        els.saveBtn.classList.remove('d-none');
+        els.saveBtn.classList.remove('disabled');
+        $('#modReport').modal('show');
+    }
+
+    els.saveBtn.onclick = () => {
+        els.infoBody.classList.add('d-none');
+        els.spinnerBody.classList.remove('d-none');
+        els.saveBtn.classList.add('disabled');
+
+        txAdminAPI({
+            type: "POST",
+            url: `diagnostics/sendReport`,
+            timeout: REQ_TIMEOUT_REALLY_LONG,
+            //NOTE: in NUI, empty bodies become GET requests even if you specify POST
+            data: {bugfix:true},
+            success: function (data) {
+                els.spinnerBody.classList.add('d-none');
+                els.saveBtn.classList.add('d-none');
+                if(data.error){
+                    els.resultErrorBody.classList.remove('d-none');
+                    els.resultErrorMessage.textContent = data.error;
+                }else if(data.reportId){
+                    els.resultSuccessBody.classList.remove('d-none');
+                    els.reportId.textContent = data.reportId;
+                }else{
+                    els.resultErrorBody.classList.remove('d-none');
+                    els.resultErrorMessage.textContent = 'Unknown backend error.';
+                }
+            },
+            error: function (xmlhttprequest, textstatus, message) {
+                els.resultErrorBody.classList.remove('d-none');
+                els.resultErrorMessage.textContent = `Error: ${message}`;
+            }
+        });
+    }
+</script>
