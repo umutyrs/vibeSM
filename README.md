@@ -43,4 +43,4 @@ This project is licensed under the [MIT License](LICENSE).
 
 
 ## Last Words
-I would like to thanks Tabarra, Cfx.re and Rockstar Games/ Take 2 Interactive, for leaving txAdmin within the MIT License which allows Players such as me to create advanced modifications such as vibeSM.
+I would like to thanks [Tabarra](https://github.com/tabarra), [Cfx.re](https://github.com/citizenfx/) and [Rockstar Games](https://github.com/RockstarGames) / Take 2 Interactive, for leaving txAdmin within the MIT License which allows Players such as me to create advanced modifications such as vibeSM.
