@@ -2,7 +2,7 @@
 
 <p align="center">
     <p align="center">
-        <img src="docs/banner.png" alt="vibeSM Banner" width="800">
+        <img src="https://i.postimg.cc/T29gp13T/vibe-SM-banner-(1).png" alt="vibeSM Banner" width="800">
     </p>
     <p align="center">
         <strong>vibeSM</strong> is a advanced modification of the well-known txAdmin to monitor and manage FiveM and RedM servers with even more fun. With custom enhancements like multi-hosting, community-driven themes, and working translations, vibeSM makes hosting more easy and beautiful.
