@@ -8,8 +8,8 @@
         <strong>vibeSM</strong> is a advanced modification of the well-known txAdmin to monitor and manage FiveM and RedM servers with even more fun. With custom enhancements like multi-hosting, community-driven themes, and working translations, vibeSM makes hosting more easy and beautiful.
     </p>
     <p align="center">
-        <a href="https://vibesm.cc"><img src="https://img.shields.io/badge/website-vibesm.cc-purple?style=for-the-badge" alt="Website"></a>
-        <a href="https://dsc.gg/vibeSM"><img src="https://img.shields.io/discord/1511073288024096808?color=7289da&label=Discord&style=for-the-badge" alt="Discord"></a>
+        <a href="https://vibesm.cc"><img src="https://img.shields.io/badge/website-vibesm.cc-purple" alt="Website"></a>
+        <a href="https://dsc.gg/vibeSM"><img src="https://img.shields.io/discord/1511073288024096808?color=7289da&label=Discord" alt="Discord"></a>
     </p>
 </p>
 
