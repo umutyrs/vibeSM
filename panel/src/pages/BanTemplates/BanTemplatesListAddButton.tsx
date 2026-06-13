@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { PlusIcon } from "lucide-react";
-
+import { useTranslation } from "@/hooks/translator";
 
 type BanTemplatesListAddButtonProps = {
     onClick: () => void;
@@ -8,6 +8,7 @@ type BanTemplatesListAddButtonProps = {
 }
 
 export default function BanTemplatesListAddButton({ onClick, disabled }: BanTemplatesListAddButtonProps) {
+    const { t } = useTranslation();
     return (
         <li
             onClick={onClick}
@@ -17,7 +18,7 @@ export default function BanTemplatesListAddButton({ onClick, disabled }: BanTemp
             )}
         >
             <PlusIcon className="size-6" />
-            <span>Add New Reason</span>
+            <span>{t('web.ban_templates.add_new_reason')}</span>
         </li>
     )
 }

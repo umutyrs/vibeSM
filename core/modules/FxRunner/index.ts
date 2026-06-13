@@ -244,6 +244,7 @@ export default class FxRunner {
             }
         });
         vibeCore.logger.fxserver.logFxserverSpawn(this.proc.pid.toString());
+        vibeCore.discordBot.updateBotStatus().catch(() => {});
 
         //Setting up StdIO
         childProc.stdout.setEncoding('utf8');
@@ -371,6 +372,7 @@ export default class FxRunner {
             const debugInfo = this.proc.stateInfo;
             this.history.push(debugInfo);
             this.proc = null;
+            vibeCore.discordBot.updateBotStatus().catch(() => {});
 
             //Cleanup
             vibeCore.fxScheduler.handleServerClose();

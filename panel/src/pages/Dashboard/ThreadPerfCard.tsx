@@ -11,6 +11,7 @@ import { SvRtPerfThreadNamesType } from '@shared/otherTypes';
 import { cn } from '@/lib/utils';
 import { dateToLocaleDateString, dateToLocaleTimeString, isDateToday } from '@/lib/dateTime';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/translator';
 
 
 /**
@@ -55,6 +56,7 @@ const PERF_MIN_TICK_TIME = {
  */
 const ThreadPerfChart = memo(({ data, minTickIntervalMarker, width, height }: ThreadPerfChartProps) => {
     const isDarkMode = useIsDarkMode();
+    const { t } = useTranslation();
 
     const CustomToolbar = (datum: BarTooltipProps<ThreadPerfChartDatum>) => {
         const lowerLimit = data.find((_, index) => index === datum.index - 1)?.bucket ?? 0;
@@ -63,13 +65,13 @@ const ThreadPerfChart = memo(({ data, minTickIntervalMarker, width, height }: Th
         return (
             <div className="p-3 text-gray-900 bg-white rounded-md shadow-md">
                 <div>
-                    Tick duration: <strong>{formatTickBoundary(lowerLimit)}</strong> ~ <strong>{formatTickBoundary(upperLimit)}</strong>
+                    {t('web.dashboard.perf.tick_duration')} <strong>{formatTickBoundary(lowerLimit)}</strong> ~ <strong>{formatTickBoundary(upperLimit)}</strong>
                 </div>
                 <div>
-                    Time spent: <strong>~{pctString}</strong>
+                    {t('web.dashboard.perf.time_spent')} <strong>~{pctString}</strong>
                 </div>
                 <div>
-                    Tick count: {datum.data.count}
+                    {t('web.dashboard.perf.tick_count')} {datum.data.count}
                 </div>
             </div>
         );
@@ -113,7 +115,7 @@ const ThreadPerfChart = memo(({ data, minTickIntervalMarker, width, height }: Th
             }}
             axisBottom={{
                 format: '.0%',
-                legend: 'percent of total time',
+                legend: t('web.dashboard.perf.percent_total'),
                 legendPosition: 'middle',
                 legendOffset: 32,
             }}
@@ -139,7 +141,7 @@ const ThreadPerfChart = memo(({ data, minTickIntervalMarker, width, height }: Th
                         strokeDasharray: '6 2',
                         strokeDashoffset: 1,
                     },
-                    legend: 'good',
+                    legend: t('web.dashboard.perf.good'),
                     legendPosition: 'bottom-right',
                     //@ts-ignore - types are wrong, it errors if I remove this
                     legendOffsetX: 10, legendOffsetY: 12, legendOrientation: 'horizontal',
@@ -158,7 +160,7 @@ const ThreadPerfChart = memo(({ data, minTickIntervalMarker, width, height }: Th
                         strokeWidth: 2,
                         strokeDasharray: '4 4',
                     },
-                    legend: 'bad',
+                    legend: t('web.dashboard.perf.bad'),
                     legendPosition: 'top-right',
                     //@ts-ignore - types are wrong, it errors if I remove this
                     legendOffsetX: 10, legendOffsetY: 12, legendOrientation: 'horizontal',
@@ -174,6 +176,7 @@ const ThreadPerfChart = memo(({ data, minTickIntervalMarker, width, height }: Th
 
 
 export default function ThreadPerfCard() {
+    const { t } = useTranslation();
     const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
     const [selectedThread, setSelectedThread] = useState<string>('svMain');
     const svRuntimeData = useAtomValue(dashSvRuntimeAtom);
@@ -252,7 +255,7 @@ export default function ThreadPerfCard() {
                 (<span className="text-xs text-warning-inline font-mono">{fullStr}</span>)
             </>);
         } else {
-            return dataAge.isStale ? '(minutes ago)' : '(last minute)';
+            return dataAge.isStale ? t('web.dashboard.stats.minutes_ago') : t('web.dashboard.perf.last_minute');
         }
     }, [svRuntimeData, perfCursorData]);
 
@@ -266,8 +269,7 @@ export default function ThreadPerfCard() {
     } else if (typeof chartData === 'string') {
         contentNode = <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground text-center">
             <p className='max-w-80'>
-                Data not yet available. <br />
-                The thread performance chart will appear soon after the server is online.
+                {t('web.dashboard.perf.no_data')}
             </p>
         </div>;
     } else {
@@ -281,7 +283,7 @@ export default function ThreadPerfCard() {
         <div className="py-3 px-1 flex flex-col col-span-3 glass-card fill-primary h-[20rem] max-h-[20rem]">
             <div className="px-4 flex flex-row items-center justify-between pb-2 text-muted-foreground border-b border-white/5 mb-2">
                 <h3 className="tracking-tight text-sm font-semibold text-white line-clamp-1">
-                    {cursorThreadLabel ?? selectedThread} Performance {titleTimeIndicator}
+                    {t('web.dashboard.perf.title', { thread: cursorThreadLabel ?? selectedThread })} {titleTimeIndicator}
                 </h3>
                 <div className="flex gap-4">
                     <Select
@@ -293,7 +295,7 @@ export default function ThreadPerfCard() {
                             "w-32 grow md:grow-0 h-6 px-3 py-1 text-xs bg-white/5 border-white/5 hover:bg-white/10 text-white rounded transition-colors focus:ring-1 focus:ring-primary",
                             !!perfCursorData && 'hidden'
                         )} >
-                            <SelectValue placeholder="Filter by admin" />
+                            <SelectValue placeholder={t('web.dashboard.perf.filter_placeholder')} />
                         </SelectTrigger>
                         <SelectContent className="px-0">
                             <SelectItem value={'svMain'} className="cursor-pointer">

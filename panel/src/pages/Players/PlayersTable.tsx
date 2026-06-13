@@ -9,6 +9,7 @@ import { Loader2Icon, ShieldCheckIcon, ActivitySquareIcon, FileTextIcon } from '
 import { useOpenPlayerModal } from "@/hooks/playerModal";
 import { PlayersTableSearchResp, PlayersTableFiltersType, PlayersTableSearchType, PlayersTableSortingType, PlayersTablePlayerType } from '@shared/playerApiTypes';
 import { useBackendApi } from '@/hooks/fetch';
+import { useTranslation } from '@/hooks/translator';
 
 
 /**
@@ -61,22 +62,23 @@ type LastRowProps = {
 }
 
 function LastRow({ playersCount, hasReachedEnd, isFetching, loadError, retryFetch }: LastRowProps) {
+    const { t } = useTranslation();
     let content: React.ReactNode;
     if (isFetching) {
         content = <Loader2Icon className="mx-auto animate-spin" />
     } else if (loadError) {
         content = <>
-            <span className='text-destructive-inline'>Error: {loadError}</span><br />
-            <button className='underline' onClick={() => retryFetch()}>Try again?</button>
+            <span className='text-destructive-inline'>{t('web.players.last_row_error', { error: loadError })}</span><br />
+            <button className='underline' onClick={() => retryFetch()}>{t('web.players.last_row_try_again')}</button>
         </>
     } else if (hasReachedEnd) {
         content = <span className='font-bold text-muted-foreground'>
-            {playersCount ? 'You have reached the end of the list.' : 'No players found.'}
+            {playersCount ? t('web.players.reached_end') : t('web.players.no_players')}
         </span>
     } else {
         content = <span>
-            You've found the end of the rainbow, but there's no pot of gold here. <br />
-            <i>(this is a bug, please report it in <TxAnchor href="https://discord.gg/vibeSM" target="_blank" rel="noopener noreferrer">discord.gg/vibeSM</TxAnchor>)</i>
+            {t('web.history.bug_report_1')} <br />
+            <i>{t('web.history.bug_report_2_prefix')}<TxAnchor href="https://discord.gg/vibeSM" target="_blank" rel="noopener noreferrer">discord.gg/vibeSM</TxAnchor>{t('web.history.bug_report_2_suffix')}</i>
         </span>
     }
 
@@ -137,6 +139,7 @@ type PlayersTableProps = {
 }
 
 export default function PlayersTable({ search, filters }: PlayersTableProps) {
+    const { t } = useTranslation();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [players, setPlayers] = useState<PlayersTablePlayerType[]>([]);
     const [hasReachedEnd, setHasReachedEnd] = useState(false);
@@ -184,9 +187,9 @@ export default function PlayersTable({ search, filters }: PlayersTableProps) {
 
             //Dealing with errors
             if (resp === undefined) {
-                return handleError(`Request failed.`);
+                return handleError(t('web.players.err_req_failed'));
             } else if ('error' in resp) {
-                return handleError(`Request failed: ${resp.error}`);
+                return handleError(t('web.players.err_req_failed_with', { error: resp.error }));
             }
 
             //Setting the states
@@ -199,7 +202,7 @@ export default function PlayersTable({ search, filters }: PlayersTableProps) {
                 setPlayers([]);
             }
         } catch (error) {
-            handleError(`Failed to fetch more data: ${(error as Error).message}`);
+            handleError(t('web.players.err_fetch_failed', { error: (error as Error).message }));
         } finally {
             setIsFetching(false);
             setIsResetting(false);
@@ -258,22 +261,22 @@ export default function PlayersTable({ search, filters }: PlayersTableProps) {
                     <TableHeader>
                         <tr className='sticky top-0 z-10 bg-card/85 backdrop-blur-md text-foreground text-[10px] border-b border-white/10 transition-colors uppercase tracking-wider'>
                             <th className='py-2.5 px-4 font-display font-semibold text-left text-white/50 border-r border-white/5'>
-                                Display Name
+                                {t('web.players.header_display_name')}
                             </th>
                             <SortableTableHeader
-                                label='Play Time'
+                                label={t('web.players.header_play_time')}
                                 sortKey='playTime'
                                 sortingState={sorting}
                                 setSorting={setSorting}
                             />
                             <SortableTableHeader
-                                label='First Joined'
+                                label={t('web.players.header_first_joined')}
                                 sortKey='tsJoined'
                                 sortingState={sorting}
                                 setSorting={setSorting}
                             />
                             <SortableTableHeader
-                                label='Last Connection'
+                                label={t('web.players.header_last_connection')}
                                 sortKey='tsLastConnection'
                                 sortingState={sorting}
                                 setSorting={setSorting}

@@ -9,6 +9,7 @@ import discordBot from "./discordBot";
 import gameFeatures from "./gameFeatures";
 import webServer from "./webServer";
 import logger from "./logger";
+import queue from "./queue";
 import { SYM_RESET_CONFIG } from "@lib/symbols";
 
 
@@ -36,6 +37,7 @@ export const ConfigSchemas_v2 = {
     gameFeatures,
     webServer,
     logger,
+    queue,
 } satisfies ListOf<ConfigScope>;
 
 //Exporting the types

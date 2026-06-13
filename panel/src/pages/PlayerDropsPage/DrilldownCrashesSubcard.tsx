@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { cn, numberToLocaleString } from "@/lib/utils";
 import { PlayerDropsMessage } from "./PlayerDropsGenericSubcards";
 import { compressMultipleCounter, splitPrefixedStrings } from "./utils";
-
+import { useTranslation } from "@/hooks/translator";
 
 type CrashDatumData = {
     key: string;
@@ -19,6 +19,7 @@ type CrashTypeRowProps = {
 };
 
 function CrashTypeRow({ datum, isLast, isOdd }: CrashTypeRowProps) {
+    const { t } = useTranslation();
     let dataCellNode = null;
     if (datum.prefix) {
         dataCellNode = <>
@@ -38,10 +39,10 @@ function CrashTypeRow({ datum, isLast, isOdd }: CrashTypeRowProps) {
                 'hover:bg-secondary/35'
             )}
         >
-            <td className="min-w-[4ch] px-2 py-1 border-r text-right" title="Percent of all crashes">
+            <td className="min-w-[4ch] px-2 py-1 border-r text-right" title={t('web.player_drops.crashes.pct_title')}>
                 {datum.pctStr ?? '--'}
             </td>
-            <td className="min-w-[4ch] px-2 py-1 border-r text-right" title="Crash count">
+            <td className="min-w-[4ch] px-2 py-1 border-r text-right" title={t('web.player_drops.crashes.count_title')}>
                 {datum.cntStr ?? '--'}
             </td>
             <td className="px-2 py-1 attempt-word-wrap line-clamp-4">
@@ -50,7 +51,6 @@ function CrashTypeRow({ datum, isLast, isOdd }: CrashTypeRowProps) {
         </tr>
     );
 }
-
 
 type DrilldownCrashesSubcardProps = {
     crashTypes: [reasonType: string, count: number][];
@@ -65,8 +65,10 @@ export default function DrilldownCrashesSubcard({
     crashesTargetLimit,
     setCrashesTargetLimit
 }: DrilldownCrashesSubcardProps) {
+    const { t } = useTranslation();
+
     if (!crashTypes.length) {
-        return <PlayerDropsMessage message="No player crashes within this time window." />;
+        return <PlayerDropsMessage message={t('web.player_drops.crashes.no_crashes')} />;
     }
 
     const crashesData = useMemo(() => {
@@ -114,8 +116,8 @@ export default function DrilldownCrashesSubcard({
             <thead>
                 <tr className="border-b text-muted-foreground/75">
                     <th className="min-w-[4ch] px-2 py-1 border-r text-right">%</th>
-                    <th className="min-w-[4ch] px-2 py-1 border-r text-right">Count</th>
-                    <th className="px-2 py-1">Crash Reason</th>
+                    <th className="min-w-[4ch] px-2 py-1 border-r text-right">{t('web.player_drops.crashes.header_count')}</th>
+                    <th className="px-2 py-1">{t('web.player_drops.crashes.header_reason')}</th>
                 </tr>
             </thead>
             <tbody>
@@ -137,13 +139,20 @@ export default function DrilldownCrashesSubcard({
                                 'hover:bg-secondary/35'
                             )}
                         >
-                            Showing the top {crashesData.display.length} out of {numberToLocaleString(crashTypes.length)} reasons which account for {crashesData.displayPct} of all crashes. <br />
-                            The remaining {numberToLocaleString(crashesData.filteredOut.types)} reasons account for {crashesData.filteredOut.countPct} of all crashes. {' '}
+                            {t('web.player_drops.crashes.showing_top', {
+                                shown: crashesData.display.length,
+                                total: numberToLocaleString(crashTypes.length),
+                                pct: crashesData.displayPct
+                            })} <br />
+                            {t('web.player_drops.crashes.remaining_reasons', {
+                                remaining: numberToLocaleString(crashesData.filteredOut.types),
+                                pct: crashesData.filteredOut.countPct
+                            })} {' '}
                             <button
                                 className="text-accent hover:underline"
                                 onClick={() => setCrashesTargetLimit(0)}
                             >
-                                Show All!
+                                {t('web.player_drops.crashes.show_all_btn')}
                             </button>
                         </td>
                     </tr>

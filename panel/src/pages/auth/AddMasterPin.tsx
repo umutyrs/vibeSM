@@ -5,11 +5,12 @@ import { cn } from "@/lib/utils";
 import { ApiAddMasterPinReq, ApiAddMasterPinResp } from "@shared/authApiTypes";
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { LogoutReasonHash } from "./Login";
 import { fetchWithTimeout } from "@/hooks/fetch";
 import { AuthError, processFetchError, type AuthErrorData } from "./errors";
+import { useTranslation } from "@/hooks/translator";
 
 export default function AddMasterPin() {
+    const { t } = useTranslation();
     const pinRef = useRef<HTMLInputElement>(null);
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [messageText, setMessageText] = useState<string | undefined>();
@@ -47,7 +48,7 @@ export default function AddMasterPin() {
             }
         } catch (error) {
             setIsMessageError(true);
-            const { errorTitle, errorMessage } = processFetchError(error);
+            const { errorTitle, errorMessage } = processFetchError(error, t);
             setMessageText(`${errorTitle}: ${errorMessage}`);
         } finally {
             setIsFetching(false);
@@ -56,10 +57,10 @@ export default function AddMasterPin() {
 
     useEffect(() => {
         if (/^#\d{4}$/.test(window.location.hash)) {
-            setMessageText('Auto-filled ✔');
+            setMessageText(t('web.auth.pin.autofilled'));
             pinRef.current!.value = window.location.hash.substring(1);
         }
-    }, []);
+    }, [t]);
 
     if (fullPageError) {
         return <AuthError error={fullPageError} />
@@ -75,9 +76,9 @@ export default function AddMasterPin() {
             className='w-full'
         >
             <CardHeader className="space-y-1">
-                <CardTitle className="text-3xl">No Cfx.re account linked</CardTitle>
+                <CardTitle className="text-3xl">{t('web.auth.pin.no_cfx_linked')}</CardTitle>
                 <CardDescription className="text-base text-muted-foreground">
-                    Type in the PIN from the terminal.
+                    {t('web.auth.pin.instructions')}
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-2">
@@ -119,7 +120,7 @@ export default function AddMasterPin() {
             <CardFooter>
                 <Button className="w-full" disabled={disableInput}>
                     {disableInput && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Link Account
+                    {t('web.auth.pin.link_btn')}
                 </Button>
             </CardFooter>
         </form>

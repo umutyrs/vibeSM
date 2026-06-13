@@ -5,6 +5,7 @@ import { SettingItem, SettingItemDesc } from '../settingsItems';
 import { useEffect, useMemo, useReducer } from "react";
 import { getConfigEmptyState, getConfigAccessors, SettingsCardProps, getPageConfig, configsReducer, getConfigDiff } from "../utils";
 import SettingsCardShell from '../SettingsCardShell';
+import { useTranslation } from "@/hooks/translator";
 
 
 export const pageConfigs = {
@@ -17,6 +18,7 @@ export const pageConfigs = {
 } as const;
 
 export default function ConfigCardGameNotifications({ cardCtx, pageCtx }: SettingsCardProps) {
+    const { t } = useTranslation();
     const [states, dispatch] = useReducer(
         configsReducer<typeof pageConfigs>,
         null,
@@ -54,88 +56,88 @@ export default function ConfigCardGameNotifications({ cardCtx, pageCtx }: Settin
             pageCtx={pageCtx}
             onClickSave={handleOnSave}
         >
-            <SettingItem label="Hide Admin Name In Punishments">
+            <SettingItem label={t('web.settings.gamenotif.hide_admin_punish_label')}>
                 <SwitchText
                     id={cfg.hideAdminInPunishments.eid}
-                    checkedLabel="Hidden"
-                    uncheckedLabel="Visible"
+                    checkedLabel={t('web.settings.gamenotif.hide_admin_punish_checked')}
+                    uncheckedLabel={t('web.settings.gamenotif.hide_admin_punish_unchecked')}
                     checked={states.hideAdminInPunishments}
                     onCheckedChange={cfg.hideAdminInPunishments.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Never show to the players the admin name on <strong>Bans</strong> or <strong>Warns</strong>. <br />
-                    This information will still be available in the history and logs.
+                    {t('web.settings.gamenotif.hide_admin_punish_desc1')}<strong>{t('web.settings.gamenotif.hide_admin_punish_desc2')}</strong>{t('web.settings.gamenotif.hide_admin_punish_desc3')}<strong>{t('web.settings.gamenotif.hide_admin_punish_desc4')}</strong>. <br />
+                    {t('web.settings.gamenotif.hide_admin_punish_desc5')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Hide Admin Name In Messages">
+            <SettingItem label={t('web.settings.gamenotif.hide_admin_msg_label')}>
                 <SwitchText
                     id={cfg.hideAdminInMessages.eid}
-                    checkedLabel="Hidden"
-                    uncheckedLabel="Visible"
+                    checkedLabel={t('web.settings.gamenotif.hide_admin_punish_checked')}
+                    uncheckedLabel={t('web.settings.gamenotif.hide_admin_punish_unchecked')}
                     checked={states.hideAdminInMessages}
                     onCheckedChange={cfg.hideAdminInMessages.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Do not show the admin name on <strong>Announcements</strong> or <strong>DMs</strong>. <br />
-                    This information will still be available in the live console and logs.
+                    {t('web.settings.gamenotif.hide_admin_msg_desc1')}<strong>{t('web.settings.gamenotif.hide_admin_msg_desc2')}</strong>{t('web.settings.gamenotif.hide_admin_msg_desc3')}<strong>{t('web.settings.gamenotif.hide_admin_msg_desc4')}</strong>. <br />
+                    {t('web.settings.gamenotif.hide_admin_msg_desc5')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Hide Announcement Notifications">
+            <SettingItem label={t('web.settings.gamenotif.hide_announcement_label')}>
                 <SwitchText
                     id={cfg.hideDefaultAnnouncement.eid}
-                    checkedLabel="Hidden"
-                    uncheckedLabel="Visible"
+                    checkedLabel={t('web.settings.gamenotif.hide_admin_punish_checked')}
+                    uncheckedLabel={t('web.settings.gamenotif.hide_admin_punish_unchecked')}
                     checked={states.hideDefaultAnnouncement}
                     onCheckedChange={cfg.hideDefaultAnnouncement.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Suppresses the display of announcements, allowing you to implement your own announcement via the event <InlineCode>vibeSM:events:announcement</InlineCode>.
-                    <TxAnchor href="https://aka.cfx.re/vibesm-events#vibesmeventsannouncement">Documentation</TxAnchor>
+                    {t('web.settings.gamenotif.hide_announcement_desc1')}<InlineCode>vibeSM:events:announcement</InlineCode>.
+                    <TxAnchor href="https://aka.cfx.re/vibesm-events#vibesmeventsannouncement">{t('web.settings.gamenotif.hide_announcement_desc2')}</TxAnchor>
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Hide Direct Message Notification">
+            <SettingItem label={t('web.settings.gamenotif.hide_dm_label')}>
                 <SwitchText
                     id={cfg.hideDefaultDirectMessage.eid}
-                    checkedLabel="Hidden"
-                    uncheckedLabel="Visible"
+                    checkedLabel={t('web.settings.gamenotif.hide_admin_punish_checked')}
+                    uncheckedLabel={t('web.settings.gamenotif.hide_admin_punish_unchecked')}
                     checked={states.hideDefaultDirectMessage}
                     onCheckedChange={cfg.hideDefaultDirectMessage.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Suppresses the display of direct messages, allowing you to implement your own direct message notification via the event <InlineCode>vibeSM:events:playerDirectMessage</InlineCode>.
-                    <TxAnchor href="https://aka.cfx.re/vibesm-events#vibesmeventsplayerdirectmessage">Documentation</TxAnchor>
+                    {t('web.settings.gamenotif.hide_dm_desc1')}<InlineCode>vibeSM:events:playerDirectMessage</InlineCode>.
+                    <TxAnchor href="https://aka.cfx.re/vibesm-events#vibesmeventsplayerdirectmessage">{t('web.settings.gamenotif.hide_announcement_desc2')}</TxAnchor>
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Hide Warning Notification">
+            <SettingItem label={t('web.settings.gamenotif.hide_warn_label')}>
                 <SwitchText
                     id={cfg.hideDefaultWarning.eid}
-                    checkedLabel="Hidden"
-                    uncheckedLabel="Visible"
+                    checkedLabel={t('web.settings.gamenotif.hide_admin_punish_checked')}
+                    uncheckedLabel={t('web.settings.gamenotif.hide_admin_punish_unchecked')}
                     checked={states.hideDefaultWarning}
                     onCheckedChange={cfg.hideDefaultWarning.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Suppresses the display of warnings, allowing you to implement your own warning via the event <InlineCode>vibeSM:events:playerWarned</InlineCode>.
-                    <TxAnchor href="https://aka.cfx.re/vibesm-events#vibesmeventsplayerwarned">Documentation</TxAnchor>
+                    {t('web.settings.gamenotif.hide_warn_desc1')}<InlineCode>vibeSM:events:playerWarned</InlineCode>.
+                    <TxAnchor href="https://aka.cfx.re/vibesm-events#vibesmeventsplayerwarned">{t('web.settings.gamenotif.hide_announcement_desc2')}</TxAnchor>
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Hide Scheduled Restart Warnings">
+            <SettingItem label={t('web.settings.gamenotif.hide_restart_label')}>
                 <SwitchText
                     id={cfg.hideScheduledRestartWarnings.eid}
-                    checkedLabel="Hidden"
-                    uncheckedLabel="Visible"
+                    checkedLabel={t('web.settings.gamenotif.hide_admin_punish_checked')}
+                    uncheckedLabel={t('web.settings.gamenotif.hide_admin_punish_unchecked')}
                     checked={states.hideScheduledRestartWarnings}
                     onCheckedChange={cfg.hideScheduledRestartWarnings.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Suppresses the display of scheduled restart warnings, allowing you to implement your own warning via the event <InlineCode>vibeSM:events:scheduledRestart</InlineCode>.
-                    <TxAnchor href="https://aka.cfx.re/vibesm-events#vibesmeventsscheduledrestart">Documentation</TxAnchor>
+                    {t('web.settings.gamenotif.hide_restart_desc1')}<InlineCode>vibeSM:events:scheduledRestart</InlineCode>.
+                    <TxAnchor href="https://aka.cfx.re/vibesm-events#vibesmeventsscheduledrestart">{t('web.settings.gamenotif.hide_announcement_desc2')}</TxAnchor>
                 </SettingItemDesc>
             </SettingItem>
         </SettingsCardShell>

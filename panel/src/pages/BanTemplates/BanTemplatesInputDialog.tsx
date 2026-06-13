@@ -9,6 +9,7 @@ import { BanTemplatesInputData } from "./BanTemplatesPage";
 import { BanDurationType } from "@shared/otherTypes";
 import { banDurationToString } from "@/lib/utils";
 import { txToast } from "@/components/TxToaster";
+import { useTranslation } from "@/hooks/translator";
 
 //Default dropdown options
 const dropdownOptions = [
@@ -35,6 +36,7 @@ export default function BanTemplatesInputDialog({
     isDialogOpen,
     setIsDialogOpen
 }: BanTemplatesInputDialogProps) {
+    const { t } = useTranslation();
     //Detecting initial state
     let initialReason = '';
     let initialSelectedDuration = '2 days';
@@ -78,7 +80,7 @@ export default function BanTemplatesInputDialog({
         form.reason.value = reason; //just to make sure the field is also trimmed
         if (reason.length < 3) {
             form.reason.focus();
-            return txToast.warning('Reason must be at least 3 characters long');
+            return txToast.warning(t('web.ban_templates.toast_reason_len'));
         }
         let duration: BanDurationType;
         if (selectedDuration === 'permanent') {
@@ -86,7 +88,7 @@ export default function BanTemplatesInputDialog({
         } else if (selectedDuration === 'custom') {
             if (form.durationMultiplier.value <= 0) {
                 form.durationMultiplier.focus();
-                return txToast.warning('Custom duration must be a positive number');
+                return txToast.warning(t('web.ban_templates.toast_custom_pos'));
             }
             duration = {
                 value: parseInt(form.durationMultiplier.value),
@@ -108,15 +110,15 @@ export default function BanTemplatesInputDialog({
                 <form onSubmit={handleSubmit}>
                     <div className="space-y-4">
                         <DialogHeader>
-                            <DialogTitle>{reasonData ? 'Edit' : 'Add'} Template</DialogTitle>
+                            <DialogTitle>{reasonData ? t('web.ban_templates.edit_template') : t('web.ban_templates.add_template')}</DialogTitle>
                         </DialogHeader>
                         <div className="grid grid-cols-6 items-center gap-4">
                             <Label htmlFor="banReason" className="col-span-6 sm:col-auto">
-                                Reason
+                                {t('web.ban_templates.label_reason')}
                             </Label>
                             <AutosizeTextarea
                                 id="reason"
-                                placeholder="The reason for the ban, rule violated, etc."
+                                placeholder={t('web.ban_templates.placeholder_reason')}
                                 className="col-span-full sm:col-span-5"
                                 defaultValue={initialReason}
                                 ref={reasonRef}
@@ -135,7 +137,7 @@ export default function BanTemplatesInputDialog({
                         </div>
                         <div className="grid grid-cols-6 items-center gap-4">
                             <Label htmlFor="durationSelect" className="col-span-6 sm:col-auto">
-                                Duration
+                                {t('web.ban_templates.label_duration')}
                             </Label>
                             <div className="col-span-full sm:col-span-5 space-y-1">
                                 <Select
@@ -143,17 +145,17 @@ export default function BanTemplatesInputDialog({
                                     defaultValue={selectedDuration}
                                 >
                                     <SelectTrigger id="durationSelect" className="tracking-wide">
-                                        <SelectValue placeholder="Select Duration" />
+                                        <SelectValue placeholder={t('web.ban_templates.select_duration_placeholder')} />
                                     </SelectTrigger>
                                     <SelectContent className="tracking-wide">
-                                        <SelectItem value="custom" className="font-bold">Custom (set below)</SelectItem>
-                                        <SelectItem value="2 hours">2 HOURS</SelectItem>
-                                        <SelectItem value="8 hours">8 HOURS</SelectItem>
-                                        <SelectItem value="1 days">1 DAY</SelectItem>
-                                        <SelectItem value="2 days">2 DAYS</SelectItem>
-                                        <SelectItem value="1 weeks">1 WEEK</SelectItem>
-                                        <SelectItem value="2 weeks">2 WEEKS</SelectItem>
-                                        <SelectItem value="permanent" className="font-bold">Permanent</SelectItem>
+                                        <SelectItem value="custom" className="font-bold">{t('web.ban_templates.duration_custom')}</SelectItem>
+                                        <SelectItem value="2 hours">{t('web.ban_templates.duration_2h')}</SelectItem>
+                                        <SelectItem value="8 hours">{t('web.ban_templates.duration_8h')}</SelectItem>
+                                        <SelectItem value="1 days">{t('web.ban_templates.duration_1d')}</SelectItem>
+                                        <SelectItem value="2 days">{t('web.ban_templates.duration_2d')}</SelectItem>
+                                        <SelectItem value="1 weeks">{t('web.ban_templates.duration_1w')}</SelectItem>
+                                        <SelectItem value="2 weeks">{t('web.ban_templates.duration_2w')}</SelectItem>
+                                        <SelectItem value="permanent" className="font-bold">{t('web.ban_templates.duration_permanent')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <div className="flex flex-row gap-2">
@@ -180,17 +182,17 @@ export default function BanTemplatesInputDialog({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="tracking-wide">
-                                            <SelectItem value="hours">HOURS</SelectItem>
-                                            <SelectItem value="days">DAYS</SelectItem>
-                                            <SelectItem value="weeks">WEEKS</SelectItem>
-                                            <SelectItem value="months">MONTHS</SelectItem>
+                                            <SelectItem value="hours">{t('web.ban_templates.select_unit_hours')}</SelectItem>
+                                            <SelectItem value="days">{t('web.ban_templates.select_unit_days')}</SelectItem>
+                                            <SelectItem value="weeks">{t('web.ban_templates.select_unit_weeks')}</SelectItem>
+                                            <SelectItem value="months">{t('web.ban_templates.select_unit_months')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button type="submit">Save changes</Button>
+                            <Button type="submit">{t('web.ban_templates.save_changes')}</Button>
                         </DialogFooter>
                     </div>
                 </form>

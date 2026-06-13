@@ -7,6 +7,7 @@ import DebouncedResizeContainer from "@/components/DebouncedResizeContainer";
 import { useAtomValue } from 'jotai';
 import { dashPlayerDropAtom, useGetDashDataAge } from './dashboardHooks';
 import { playerDropCategories, playerDropCategoryDefaultColor } from '@/lib/playerDropCategories';
+import { useTranslation } from '@/hooks/translator';
 
 
 type PlayerDropChartDatum = {
@@ -22,6 +23,7 @@ type PieCenterTextProps = PieCustomLayerProps<PlayerDropChartDatum> & {
 };
 
 const PieCenterText = ({ centerX, centerY, dataWithArc, innerRadius, active }: PieCenterTextProps) => {
+    const { t } = useTranslation();
     if (active) {
         return (<>
             <circle
@@ -62,7 +64,7 @@ const PieCenterText = ({ centerX, centerY, dataWithArc, innerRadius, active }: P
                 dominantBaseline="central"
                 className='text-2xl font-bold fill-muted-foreground'
             >
-                Total:
+                {t('web.dashboard.player_drop.total')}
             </text>
             <text
                 x={centerX}
@@ -142,6 +144,7 @@ const PlayerDropChart = memo(({ data, activeId, setActiveId, width, height }: Pl
 
 
 export default function PlayerDropCard() {
+    const { t } = useTranslation();
     const [activeId, setActiveId] = useState<DatumId | null>(null)
     const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
     const playerDropData = useAtomValue(dashPlayerDropAtom);
@@ -193,7 +196,7 @@ export default function PlayerDropCard() {
     } else if (typeof chartData === 'string') {
         contentNode = <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground text-center">
             <p className='max-w-80'>
-                No players have disconnected from the server in the last 6 hours.
+                {t('web.dashboard.player_drop.no_disconnects')}
             </p>
         </div>;
     } else {
@@ -205,7 +208,7 @@ export default function PlayerDropCard() {
     return (
         <div className="col-span-3 sm:col-span-2 2xl:col-span-3 py-3 px-1 flex flex-col glass-card min-w-64 h-[20rem] max-h-[20rem]">
             <div className="px-4 flex flex-row items-center justify-between pb-2 text-muted-foreground border-b border-white/5 mb-2">
-                <h3 className="tracking-tight text-sm font-semibold text-white line-clamp-1">Player Drop Cause (last 6h)</h3>
+                <h3 className="tracking-tight text-sm font-semibold text-white line-clamp-1">{t('web.dashboard.player_drop.title')}</h3>
                 <div className='hidden sm:block text-primary'><DoorOpenIcon size="18" /></div>
             </div>
             {/* <div className='font-mono'>

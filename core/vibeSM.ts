@@ -64,6 +64,7 @@ export default function bootVibeSM() {
         configurable: true
     });
 
+
     //Setting up the global vibeCore object as a Proxy
     (globalThis as any).vibeCore = getCoreProxy(_vibeCore);
 

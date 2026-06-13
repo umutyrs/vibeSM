@@ -58,6 +58,48 @@ export default async function AuthVerifyPassword(ctx: InitializedCtx) {
             });
         }
 
+        const is2faEnabled = !!vaultAdmin.twoFactorEnabled;
+        const is2faRequiredByConfig = !!vibeConfig.general.twoFactorRequired;
+        const isNewLocation = ctx.ip !== vaultAdmin.lastLoginIp;
+
+        if (is2faRequiredByConfig || (is2faEnabled && isNewLocation)) {
+            const sessData = {
+                type: '2fa_pending' as const,
+                username: vaultAdmin.name,
+                password_hash: vaultAdmin.password_hash,
+                expiresAt: Date.now() + 5 * 60 * 1000,
+                csrfToken: vibeCore.adminStore.genCsrfToken(),
+            };
+            ctx.sessTools.set({ auth: sessData });
+
+            if (is2faEnabled) {
+                return ctx.send<any>({
+                    error: '2fa_required',
+                });
+            } else {
+                const { generateBase32Secret } = await import('@core/lib/totp');
+                const QRCode = await import('qrcode');
+                
+                let secret = vaultAdmin.twoFactorPendingSecret;
+                if (!secret) {
+                    secret = generateBase32Secret();
+                    await vibeCore.adminStore.setAdmin2FAPendingSecret(vaultAdmin.name, secret);
+                }
+
+                const otpauthUrl = `otpauth://totp/vibeSM:${vaultAdmin.name}?secret=${secret}&issuer=vibeSM`;
+                const qrCode = await QRCode.toDataURL(otpauthUrl);
+
+                return ctx.send<any>({
+                    error: '2fa_setup_required',
+                    secret,
+                    qrCode,
+                });
+            }
+        }
+
+        // Bypassed 2FA or not required. Save the last login IP.
+        await vibeCore.adminStore.saveAdminLastLoginIp(vaultAdmin.name, ctx.ip);
+
         //Setting up session
         const sessData = {
             type: 'password',

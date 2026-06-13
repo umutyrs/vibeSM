@@ -10,6 +10,7 @@ import {
 import PlayersTable from './PlayersTable';
 import { PlayersStatsResp, PlayersTableFiltersType, PlayersTableSearchType } from '@shared/playerApiTypes';
 import { useBackendApi } from '@/hooks/fetch';
+import { useTranslation } from '@/hooks/translator';
 
 
 //Memoized components
@@ -85,6 +86,7 @@ const getInitialState = () => {
 
 
 export default function PlayersPage() {
+    const { t } = useTranslation();
     const [calloutData, setCalloutData] = useState<PlayersStatsResp | undefined>(undefined);
     const [searchBoxReturn, setSearchBoxReturn] = useState<PlayersSearchBoxReturnStateType | undefined>(undefined);
     const statsApi = useBackendApi<PlayersStatsResp>({
@@ -123,29 +125,29 @@ export default function PlayersPage() {
         const hasCalloutData = calloutData && !('error' in calloutData);
         return [
             {
-                label: 'Total Players',
+                label: t('web.players.title_total'),
                 value: hasCalloutData ? calloutData.total : false,
                 icon: <UsersIcon />,
             },
             {
-                label: 'Players Last 24h',
+                label: t('web.players.title_played_24h'),
                 value: hasCalloutData ? calloutData.playedLast24h : false,
                 icon: <CalendarPlusIcon />,
             },
             {
-                label: 'New Players Last 24h',
+                label: t('web.players.title_joined_24h'),
                 value: hasCalloutData ? calloutData.joinedLast24h : false,
                 icon: <UserRoundPlusIcon />,
                 prefix: '+'
             },
             {
-                label: 'New Players Last 7d',
+                label: t('web.players.title_joined_7d'),
                 value: hasCalloutData ? calloutData.joinedLast7d : false,
                 icon: <UserRoundPlusIcon />,
                 prefix: '+'
             }
         ] satisfies PageCalloutProps[];
-    }, [calloutData]);
+    }, [calloutData, t]);
 
     return (<div
         className='flex flex-col min-w-96 w-full h-contentvh'

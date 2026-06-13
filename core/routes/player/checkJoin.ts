@@ -36,7 +36,7 @@ const rejectMessageTemplate = (title: string, content: string) => {
         <p style="font-size: 1.25rem; padding: 0px">
             ${content}
         </p>
-        <img src="https://forum-cfx-re.akamaized.net/original/5X/c/3/8/e/c38e8346a39c6483385c0727bee5c2abc705156a.png" style="
+        <img src="https://i.postimg.cc/L5qhs10w/vibe-SM-2.png" style="
             position: absolute;
             right: 15px;
             bottom: 15px;
@@ -130,8 +130,21 @@ export default async function PlayerCheckJoin(ctx: InitializedCtx) {
             if (!result.allow) return sendTypedResp(result);
         }
 
-        //If not blocked by ban/wl, allow join
-        // return sendTypedResp({ allow: false, reason: 'APPROVED, BUT TEMP BLOCKED (DEBUG)' });
+        //Checking queue
+        if (vibeConfig.queue?.enabled && validIdsObject.license) {
+            const { queueManager } = await import('@modules/Queue/queueManager');
+            const queueResult = await queueManager.checkPlayerQueue(
+                validIdsObject.license,
+                playerName,
+                validIdsArray,
+                validIdsObject
+            );
+            if (!queueResult.allow) {
+                return sendTypedResp(queueResult);
+            }
+        }
+
+        //If not blocked by ban/wl/queue, allow join
         return sendTypedResp({ allow: true });
     } catch (error) {
         const msg = `Failed to check ban/whitelist status: ${(error as Error).message}`;

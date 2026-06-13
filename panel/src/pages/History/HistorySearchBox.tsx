@@ -25,6 +25,7 @@ import {
     SelectValue
 } from "@/components/ui/select"
 import { HistoryTableSearchType } from "@shared/historyApiTypes";
+import { useTranslation } from "@/hooks/translator";
 
 
 /**
@@ -50,6 +51,24 @@ export const availableSearchTypes = [
         description: 'Search actions by their player IDs separated by a comma.'
     },
 ] as const;
+
+const searchTypeKeys: Record<string, { label: string; placeholder: string; description: string }> = {
+    actionId: {
+        label: 'web.history.search_type_action_id',
+        placeholder: 'XXXX-XXXX',
+        description: 'web.history.search_type_action_id_desc'
+    },
+    reason: {
+        label: 'web.history.search_type_reason',
+        placeholder: 'web.history.search_type_reason_placeholder',
+        description: 'web.history.search_type_reason_desc'
+    },
+    identifiers: {
+        label: 'web.history.search_type_player_ids',
+        placeholder: 'web.history.search_type_player_ids_placeholder',
+        description: 'web.history.search_type_player_ids_desc'
+    }
+};
 
 export const SEARCH_ANY_STRING = '!any';
 
@@ -80,6 +99,7 @@ type HistorySearchBoxProps = {
 };
 
 export function HistorySearchBox({ doSearch, initialState, adminStats }: HistorySearchBoxProps) {
+    const { t } = useTranslation();
     const { authData } = useAuth();
     const inputRef = useRef<HTMLInputElement>(null);
     const [isSearchTypeDropdownOpen, setSearchTypeDropdownOpen] = useState(false);
@@ -87,6 +107,18 @@ export function HistorySearchBox({ doSearch, initialState, adminStats }: History
     const [hasSearchText, setHasSearchText] = useState(!!initialState.search.value);
     const [typeFilter, setTypeFilter] = useState(initialState.filterbyType);
     const [adminNameFilter, setAdminNameFilter] = useState(initialState.filterbyAdmin);
+
+    const searchTypesTranslated = useMemo(() => {
+        return availableSearchTypes.map(type => {
+            const keys = searchTypeKeys[type.value];
+            return {
+                value: type.value,
+                label: t(keys.label),
+                placeholder: keys.placeholder.startsWith('web.history') ? t(keys.placeholder) : keys.placeholder,
+                description: t(keys.description)
+            };
+        });
+    }, [t]);
 
     const updateSearch = () => {
         if (!inputRef.current) return;
@@ -136,7 +168,7 @@ export function HistorySearchBox({ doSearch, initialState, adminStats }: History
     });
 
     //It's render time! 🎉
-    const selectedSearchType = availableSearchTypes.find((type) => type.value === currSearchType);
+    const selectedSearchType = searchTypesTranslated.find((type) => type.value === currSearchType);
     if (!selectedSearchType) throw new Error(`Invalid search type: ${currSearchType}`);
     if (!authData) throw new Error(`authData is not available`);
     const filteredAdmins = useMemo(() => {
@@ -183,15 +215,15 @@ export function HistorySearchBox({ doSearch, initialState, adminStats }: History
                                 onClick={() => setSearchTypeDropdownOpen(!isSearchTypeDropdownOpen)}
                                 className="xs:w-48 justify-between border-input bg-black/5 dark:bg-black/30 hover:dark:bg-primary grow md:grow-0"
                             >
-                                Search by {selectedSearchType.label}
+                                {t('web.history.search_by', { type: selectedSearchType.label })}
                                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className='w-48'>
-                            <DropdownMenuLabel>Search Type</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t('web.history.search_type')}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuRadioGroup value={currSearchType} onValueChange={setCurrSearchType}>
-                                {availableSearchTypes.map((searchType) => (
+                                {searchTypesTranslated.map((searchType) => (
                                     <DropdownMenuRadioItem
                                         key={searchType.value}
                                         value={searchType.value}
@@ -207,28 +239,28 @@ export function HistorySearchBox({ doSearch, initialState, adminStats }: History
 
                     <Select defaultValue={typeFilter} onValueChange={setTypeFilter}>
                         <SelectTrigger className="w-36 grow md:grow-0" >
-                            <SelectValue placeholder="Filter by admin" />
+                            <SelectValue placeholder={t('web.history.filter_admin_placeholder')} />
                         </SelectTrigger>
                         <SelectContent className="px-0">
                             <SelectItem value={SEARCH_ANY_STRING} className="cursor-pointer">
-                                Any type
+                                {t('web.history.filter_any_type')}
                             </SelectItem>
                             <SelectItem value={'ban'} className="cursor-pointer">
-                                Bans
+                                {t('web.history.filter_bans')}
                             </SelectItem>
                             <SelectItem value={'warn'} className="cursor-pointer">
-                                Warns
+                                {t('web.history.filter_warns')}
                             </SelectItem>
                         </SelectContent>
                     </Select>
 
                     <Select defaultValue={adminNameFilter} onValueChange={setAdminNameFilter}>
                         <SelectTrigger className="w-36 grow md:grow-0" >
-                            <SelectValue placeholder="Filter by admin" />
+                            <SelectValue placeholder={t('web.history.filter_admin_placeholder')} />
                         </SelectTrigger>
                         <SelectContent className="px-0">
                             <SelectItem value={SEARCH_ANY_STRING} className="cursor-pointer">
-                                By any admin
+                                {t('web.history.filter_any_admin')}
                             </SelectItem>
                             <SelectItem value={authData.name} className="cursor-pointer">
                                 {authData.name} <span className="opacity-50">({selfActionCount})</span>
@@ -251,7 +283,7 @@ export function HistorySearchBox({ doSearch, initialState, adminStats }: History
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="grow md:grow-0">
-                                    More
+                                    {t('web.history.more')}
                                     <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -259,13 +291,13 @@ export function HistorySearchBox({ doSearch, initialState, adminStats }: History
                                 <DropdownMenuItem className="h-10 pl-1 pr-2 py-2" asChild>
                                     <Link href="/system/master-actions#cleandb" className="cursor-pointer">
                                         <ExternalLinkIcon className="inline mr-1 h-4" />
-                                        Bulk Remove
+                                        {t('web.history.bulk_remove')}
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="h-10 pl-1 pr-2 py-2" asChild>
                                     <Link href="/settings/ban-templates" className="cursor-pointer">
                                         <ExternalLinkIcon className="inline mr-1 h-4" />
-                                        Ban Templates
+                                        {t('web.history.ban_templates')}
                                     </Link>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>

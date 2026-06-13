@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { TxConfigState } from '@shared/enums';
 import { GlobalStatusType } from '@shared/socketioTypes';
 import { useAtomValue, useAtom } from 'jotai';
-import { BoxIcon, ChevronRightSquareIcon, DnaIcon, EyeIcon, FileEditIcon, HourglassIcon, LayoutDashboardIcon } from 'lucide-react';
+import { BoxIcon, ChevronRightSquareIcon, DnaIcon, EyeIcon, FileEditIcon, HourglassIcon, LayoutDashboardIcon, ServerIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useBackendApi } from '@/hooks/fetch';
@@ -78,15 +78,18 @@ export default function ServerMenu() {
     const listApi = useBackendApi({ method: 'GET', path: '/multi-hosting/servers' });
     const [selectedServerId, setSelectedServerId] = useAtom(selectedServerIdAtom);
 
+    const handleServerChange = (newVal: string) => {
+        setSelectedServerId(newVal);
+        window.location.reload();
+    };
+
     useEffect(() => {
-        if (vibeConfigState === TxConfigState.Ready) {
-            listApi({}).then((data) => {
-                if (Array.isArray(data)) {
-                    setServers(data);
-                }
-            }).catch(() => {});
-        }
-    }, [vibeConfigState]);
+        listApi({}).then((data) => {
+            if (Array.isArray(data)) {
+                setServers(data);
+            }
+        }).catch(() => {});
+    }, []);
 
     const isConfigPending = vibeConfigState !== TxConfigState.Ready;
     
@@ -96,55 +99,67 @@ export default function ServerMenu() {
         : servers.find(s => s.id === selectedServerId)?.name;
 
     return <div className='relative'>
+        <div className="mb-4">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60 mb-1.5 block px-1">
+                {t('web.header.server')}
+            </span>
+            {servers.length > 0 ? (
+                <Select value={selectedServerId} onValueChange={handleServerChange}>
+                    <SelectTrigger className="w-full h-10 px-3 bg-muted/30 hover:bg-muted/60 border border-border/50 rounded-lg transition-all flex items-center justify-between focus:ring-1 focus:ring-ring">
+                        <div className="flex items-center gap-2 text-sm font-bold text-primary truncate">
+                            <ServerIcon className="h-4 w-4 text-muted-foreground/80 shrink-0" />
+                            <SelectValue placeholder={activeServerName || <ServerName />} />
+                        </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="primary">
+                            <ServerName />
+                        </SelectItem>
+                        {servers.map(s => (
+                            <SelectItem key={s.id} value={s.id}>
+                                {s.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            ) : (
+                <div className="w-full h-10 px-3 bg-muted/20 border border-border/30 rounded-lg flex items-center gap-2 text-sm font-bold text-primary select-none">
+                    <ServerIcon className="h-4 w-4 text-muted-foreground/80 shrink-0" />
+                    <span className="truncate"><ServerName /></span>
+                </div>
+            )}
+        </div>
+
         {isConfigPending ? (
             <PendingServerConfigure vibeConfigState={vibeConfigState} />
         ) : (
-            <div>
-                <h2 className="mb-3 text-sm font-extrabold tracking-wide text-primary border-b border-border/40 pb-2 flex items-center justify-between">
-                    {servers.length > 0 ? (
-                        <Select value={selectedServerId} onValueChange={setSelectedServerId}>
-                            <SelectTrigger className="w-full text-sm font-extrabold tracking-wide text-primary border-none p-0 h-auto bg-transparent focus:ring-0 shadow-none justify-between flex items-center">
-                                <SelectValue placeholder={activeServerName || <ServerName />} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="primary"><ServerName /></SelectItem>
-                                {servers.map(s => (
-                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    ) : (
-                        <span className="text-primary"><ServerName /></span>
-                    )}
-                </h2>
             <div className="space-y-1 select-none">
-                <MenuNavLink href="/">
-                    <LayoutDashboardIcon className="mr-2 h-4 w-4" />{t('web.sidebar.dashboard')}
-                </MenuNavLink>
-                <MenuNavLink href="/server/console" disabled={!hasPerm('console.view')}>
-                    <ChevronRightSquareIcon className="mr-2 h-4 w-4" />{t('web.sidebar.console')}
-                </MenuNavLink>
-                <MenuNavLink href="/server/resources">
-                    <BoxIcon className="mr-2 h-4 w-4" />{t('web.sidebar.resources')}
-                </MenuNavLink>
-                <MenuNavLink href="/server/server-log" disabled={!hasPerm('server.log.view')}>
-                    <EyeIcon className="mr-2 h-4 w-4" />{t('web.sidebar.server_log')}
-                </MenuNavLink>
-                <MenuNavLink href="/server/cfg-editor" disabled={!hasPerm('server.cfg.editor')}>
-                    <FileEditIcon className="mr-2 h-4 w-4" />{t('web.sidebar.cfg_editor')}
-                </MenuNavLink>
-                {window.txConsts.showAdvanced && (
-                    <MenuNavLink href="/advanced" className='text-accent' disabled={!hasPerm('all_permisisons')}>
-                        <DnaIcon className="mr-2 h-4 w-4" />{t('web.sidebar.advanced')}
+                    <MenuNavLink href="/">
+                        <LayoutDashboardIcon className="mr-2 h-4 w-4" />{t('web.sidebar.dashboard')}
                     </MenuNavLink>
-                )}
-                {import.meta.env.DEV && (
-                    <MenuNavLink href="/test" className='text-accent'>
-                        <DnaIcon className="mr-2 h-4 w-4" />Test
+                    <MenuNavLink href="/server/console" disabled={!hasPerm('console.view')}>
+                        <ChevronRightSquareIcon className="mr-2 h-4 w-4" />{t('web.sidebar.console')}
                     </MenuNavLink>
-                )}
-            </div>
-        </div>
+                    <MenuNavLink href="/server/resources">
+                        <BoxIcon className="mr-2 h-4 w-4" />{t('web.sidebar.resources')}
+                    </MenuNavLink>
+                    <MenuNavLink href="/server/server-log" disabled={!hasPerm('server.log.view')}>
+                        <EyeIcon className="mr-2 h-4 w-4" />{t('web.sidebar.server_log')}
+                    </MenuNavLink>
+                    <MenuNavLink href="/server/cfg-editor" disabled={!hasPerm('server.cfg.editor')}>
+                        <FileEditIcon className="mr-2 h-4 w-4" />{t('web.sidebar.cfg_editor')}
+                    </MenuNavLink>
+                    {window.txConsts.showAdvanced && (
+                        <MenuNavLink href="/advanced" className='text-accent' disabled={!hasPerm('all_permisisons')}>
+                            <DnaIcon className="mr-2 h-4 w-4" />{t('web.sidebar.advanced')}
+                        </MenuNavLink>
+                    )}
+                    {import.meta.env.DEV && (
+                        <MenuNavLink href="/test" className='text-accent'>
+                            <DnaIcon className="mr-2 h-4 w-4" />Test
+                        </MenuNavLink>
+                    )}
+                </div>
         )}
     </div>
 }

@@ -35,9 +35,17 @@ const discordRoles = typeDefinedConfig({
     },
 });
 
+const allowlistInstructions = typeDefinedConfig({
+    name: 'Allowlist Instructions',
+    default: '',
+    validator: z.string(),
+    fixer: SYM_FIXER_DEFAULT,
+});
+
 
 export default {
     mode,
     rejectionMessage,
     discordRoles,
+    allowlistInstructions,
 } as const;

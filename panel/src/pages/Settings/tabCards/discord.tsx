@@ -10,6 +10,8 @@ import { getConfigEmptyState, getConfigAccessors, SettingsCardProps, getPageConf
 import SettingsCardShell from "../SettingsCardShell"
 import { Textarea } from "@/components/ui/textarea"
 import { txToast } from "@/components/TxToaster"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useTranslation } from "@/hooks/translator"
 
 
 //We are not validating the JSON, only that it is a string
@@ -29,9 +31,14 @@ export const pageConfigs = {
     warningsChannel: getPageConfig('discordBot', 'warningsChannel'),
     embedJson: getPageConfig('discordBot', 'embedJson'),
     embedConfigJson: getPageConfig('discordBot', 'embedConfigJson'),
+    activityDescription: getPageConfig('discordBot', 'activityDescription'),
+    activityDescriptionStarting: getPageConfig('discordBot', 'activityDescriptionStarting'),
+    activityType: getPageConfig('discordBot', 'activityType'),
+    allowDangerousPermissions: getPageConfig('discordBot', 'allowDangerousPermissions'),
 } as const;
 
 export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProps) {
+    const { t } = useTranslation();
     const [states, dispatch] = useReducer(
         configsReducer<typeof pageConfigs>,
         null,
@@ -50,6 +57,8 @@ export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProp
     const botTokenRef = useRef<HTMLInputElement | null>(null);
     const discordGuildRef = useRef<HTMLInputElement | null>(null);
     const warningsChannelRef = useRef<HTMLInputElement | null>(null);
+    const activityDescriptionRef = useRef<HTMLInputElement | null>(null);
+    const activityDescriptionStartingRef = useRef<HTMLInputElement | null>(null);
 
     //Marshalling Utils
     const emptyToNull = (str?: string) => {
@@ -64,6 +73,8 @@ export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProp
             botToken: emptyToNull(botTokenRef.current?.value),
             discordGuild: emptyToNull(discordGuildRef.current?.value),
             warningsChannel: emptyToNull(warningsChannelRef.current?.value),
+            activityDescription: emptyToNull(activityDescriptionRef.current?.value),
+            activityDescriptionStarting: emptyToNull(activityDescriptionStartingRef.current?.value),
         };
 
         const res = getConfigDiff(cfg, states, overwrites, false);
@@ -78,13 +89,13 @@ export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProp
 
         if (localConfigs.discordBot?.enabled) {
             if (!localConfigs.discordBot?.token) {
-                return txToast.error('You must provide a Discord Bot Token to enable the bot.');
+                return txToast.error(t('web.settings.discord.val_token_required'));
             }
             if (!localConfigs.discordBot?.guild) {
-                return txToast.error('You must provide a Server ID to enable the bot.');
+                return txToast.error(t('web.settings.discord.val_guild_required'));
             }
             if (!localConfigs.discordBot?.embedJson || !localConfigs.discordBot?.embedConfigJson) {
-                return txToast.error('You must provide both the Embed JSON and Config JSON to enable the bot.');
+                return txToast.error(t('web.settings.discord.val_jsons_required'));
             }
         }
         pageCtx.saveChanges(cardCtx, localConfigs);
@@ -96,70 +107,139 @@ export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProp
             pageCtx={pageCtx}
             onClickSave={handleOnSave}
         >
-            <SettingItem label="Discord Bot">
+            <SettingItem label={t('web.settings.discord.bot_label')}>
                 <SwitchText
                     id={cfg.botEnabled.eid}
-                    checkedLabel="Enabled"
-                    uncheckedLabel="Disabled"
+                    checkedLabel={t('web.settings.enabled')}
+                    uncheckedLabel={t('web.settings.disabled')}
                     variant="checkedGreen"
                     checked={states.botEnabled}
                     onCheckedChange={cfg.botEnabled.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Enable Discord Integration.
+                    {t('web.settings.discord.bot_desc')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Token" htmlFor={cfg.botToken.eid} required={states.botEnabled}>
+            <SettingItem label={t('web.settings.discord.token_label')} htmlFor={cfg.botToken.eid} required={states.botEnabled}>
                 <Input
                     id={cfg.botToken.eid}
                     ref={botTokenRef}
                     defaultValue={cfg.botToken.initialValue}
                     onInput={updatePageState}
                     disabled={pageCtx.isReadOnly}
-                    placeholder="xxxxxxxxxxxxxxxxxxxxxxxx.xxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    placeholder={t('web.settings.discord.token_placeholder')}
                     maxLength={96}
                     autoComplete="off"
                     className="blur-input"
                     required
                 />
                 <SettingItemDesc>
-                    To get a token and the bot to join your server, follow these two guides:
-                    <TxAnchor href="https://discordjs.guide/preparations/setting-up-a-bot-application.html">Setting up a bot application</TxAnchor> and <TxAnchor href="https://discordjs.guide/preparations/adding-your-bot-to-servers.html">Adding your bot to servers</TxAnchor> <br />
-                    <strong>Note:</strong> Do not reuse the same token for another bot. <br />
-                    <strong>Note:</strong> The bot requires the <strong>Server Members</strong> intent, which can be set at the
-                    <TxAnchor href="https://discord.com/developers/applications">Discord Developer Portal</TxAnchor>.
+                    {t('web.settings.discord.token_desc1')}
+                    <TxAnchor href="https://discordjs.guide/preparations/setting-up-a-bot-application.html">{t('web.settings.discord.token_desc2')}</TxAnchor> and <TxAnchor href="https://discordjs.guide/preparations/adding-your-bot-to-servers.html">{t('web.settings.discord.token_desc3')}</TxAnchor> <br />
+                    <strong>{t('web.settings.whitelist.discord_roles_desc3')}</strong> {t('web.settings.discord.token_desc4')} <br />
+                    <strong>{t('web.settings.whitelist.discord_roles_desc3')}</strong> {t('web.settings.discord.token_desc5')} <strong>{t('web.settings.discord.token_desc6')}</strong> {t('web.settings.discord.token_desc7')}
+                    <TxAnchor href="https://discord.com/developers/applications">{t('web.settings.discord.token_desc8')}</TxAnchor>.
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Guild/Server ID" htmlFor={cfg.discordGuild.eid} required={states.botEnabled}>
+            <SettingItem label={t('web.settings.discord.guild_label')} htmlFor={cfg.discordGuild.eid} required={states.botEnabled}>
                 <Input
                     id={cfg.discordGuild.eid}
                     ref={discordGuildRef}
                     defaultValue={cfg.discordGuild.initialValue}
                     onInput={updatePageState}
                     disabled={pageCtx.isReadOnly}
-                    placeholder='000000000000000000'
+                    placeholder={t('web.settings.discord.guild_placeholder')}
                 />
                 <SettingItemDesc>
-                    The ID of the Discord Server (also known as Discord Guild). <br />
-                    To get the Server ID, go to Discord's settings and
-                    <TxAnchor href="https://support.discordapp.com/hc/article_attachments/115002742731/mceclip0.png"> enable developer mode</TxAnchor>, then right-click on the guild icon select "Copy ID".
+                    {t('web.settings.discord.guild_desc1')} <br />
+                    {t('web.settings.discord.guild_desc2')}
+                    <TxAnchor href="https://support.discordapp.com/hc/article_attachments/115002742731/mceclip0.png">{t('web.settings.discord.guild_desc3')}</TxAnchor>{t('web.settings.discord.guild_desc4')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Warnings Channel ID" htmlFor={cfg.warningsChannel.eid} showOptional>
+            <SettingItem label={t('web.settings.discord.warnings_channel_label')} htmlFor={cfg.warningsChannel.eid} showOptional>
                 <Input
                     id={cfg.warningsChannel.eid}
                     ref={warningsChannelRef}
                     defaultValue={cfg.warningsChannel.initialValue}
                     onInput={updatePageState}
                     disabled={pageCtx.isReadOnly}
-                    placeholder='000000000000000000'
+                    placeholder={t('web.settings.discord.warnings_channel_placeholder')}
                 />
                 <SettingItemDesc>
-                    The ID of the channel to send Announcements (eg server restarts). <br />
-                    You can leave it blank to disable this feature. <br />
-                    To get the channel ID, go to Discord's settings and
-                    <TxAnchor href="https://support.discordapp.com/hc/article_attachments/115002742731/mceclip0.png"> enable developer mode</TxAnchor>, then right-click on the channel name and select "Copy ID".
+                    {t('web.settings.discord.warnings_channel_desc1')} <br />
+                    {t('web.settings.discord.warnings_channel_desc2')} <br />
+                    {t('web.settings.discord.warnings_channel_desc3')}
+                    <TxAnchor href="https://support.discordapp.com/hc/article_attachments/115002742731/mceclip0.png">{t('web.settings.discord.warnings_channel_desc4')}</TxAnchor>{t('web.settings.discord.warnings_channel_desc5')}
+                </SettingItemDesc>
+            </SettingItem>
+            <SettingItem label={t('web.settings.discord.allow_dangerous_perms_label')}>
+                <SwitchText
+                    id={cfg.allowDangerousPermissions.eid}
+                    checkedLabel={t('web.settings.discord.allow_dangerous_perms_allowed')}
+                    uncheckedLabel={t('web.settings.discord.allow_dangerous_perms_forbidden')}
+                    variant="checkedOrange"
+                    checked={states.allowDangerousPermissions}
+                    onCheckedChange={cfg.allowDangerousPermissions.state.set}
+                    disabled={pageCtx.isReadOnly}
+                />
+                <SettingItemDesc>
+                    {t('web.settings.discord.allow_dangerous_perms_desc1')} <br />
+                    <strong>{t('web.settings.fxserver.timezone_warn1')}</strong> {t('web.settings.discord.allow_dangerous_perms_desc2')}
+                </SettingItemDesc>
+            </SettingItem>
+            <SettingItem label={t('web.settings.discord.activity_type_label')} htmlFor={cfg.activityType.eid}>
+                <Select
+                    value={states.activityType || 'watching'}
+                    onValueChange={(val) => {
+                        cfg.activityType.state.set(val);
+                    }}
+                    disabled={pageCtx.isReadOnly}
+                >
+                    <SelectTrigger id={cfg.activityType.eid}>
+                        <SelectValue placeholder={t('web.settings.discord.activity_type_placeholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="playing">{t('web.settings.discord.activity_type_playing')}</SelectItem>
+                        <SelectItem value="streaming">{t('web.settings.discord.activity_type_streaming')}</SelectItem>
+                        <SelectItem value="listening">{t('web.settings.discord.activity_type_listening')}</SelectItem>
+                        <SelectItem value="watching">{t('web.settings.discord.activity_type_watching')}</SelectItem>
+                        <SelectItem value="competing">{t('web.settings.discord.activity_type_competing')}</SelectItem>
+                    </SelectContent>
+                </Select>
+                <SettingItemDesc>
+                    {t('web.settings.discord.activity_type_desc')}
+                </SettingItemDesc>
+            </SettingItem>
+            <SettingItem label={t('web.settings.discord.activity_desc_label')} htmlFor={cfg.activityDescription.eid}>
+                <Input
+                    id={cfg.activityDescription.eid}
+                    ref={activityDescriptionRef}
+                    defaultValue={cfg.activityDescription.initialValue}
+                    onInput={updatePageState}
+                    disabled={pageCtx.isReadOnly}
+                    placeholder={t('web.settings.discord.activity_desc_placeholder')}
+                />
+                <SettingItemDesc>
+                    {t('web.settings.discord.activity_desc_desc1')} <br />
+                    - <InlineCode>{`{{players}}`}</InlineCode> / <InlineCode>[players]</InlineCode>: {t('web.settings.discord.activity_desc_desc2')} <br />
+                    - <InlineCode>{`{{maxClients}}`}</InlineCode> / <InlineCode>[maxClients]</InlineCode>: {t('web.settings.discord.activity_desc_desc3')} <br />
+                    - <InlineCode>{`{{serverName}}`}</InlineCode> / <InlineCode>[serverName]</InlineCode>: {t('web.settings.discord.activity_desc_desc4')} <br />
+                    {t('web.settings.discord.activity_desc_desc5')} <InlineCode>{`[{{players}}/{{maxClients}}] on {{serverName}}`}</InlineCode>
+                </SettingItemDesc>
+            </SettingItem>
+            <SettingItem label={t('web.settings.discord.activity_desc_starting_label')} htmlFor={cfg.activityDescriptionStarting.eid}>
+                <Input
+                    id={cfg.activityDescriptionStarting.eid}
+                    ref={activityDescriptionStartingRef}
+                    defaultValue={cfg.activityDescriptionStarting.initialValue}
+                    onInput={updatePageState}
+                    disabled={pageCtx.isReadOnly}
+                    placeholder={t('web.settings.discord.activity_desc_starting_placeholder')}
+                />
+                <SettingItemDesc>
+                    {t('web.settings.discord.activity_desc_starting_desc1')} <br />
+                    {t('web.settings.discord.activity_desc_starting_desc2')} <InlineCode>Server starting...</InlineCode>
                 </SettingItemDesc>
             </SettingItem>
             {/* <SettingItem label="Status Embed">
@@ -186,7 +266,7 @@ export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProp
                     <strong>Note:</strong> Use the command <InlineCode>/status add</InlineCode> on a channel that the bot has the "Send Message" permission to setup the embed.
                 </SettingItemDesc>
             </SettingItem> */}
-            <SettingItem label="Status Embed JSON" htmlFor={cfg.embedJson.eid} required={states.botEnabled}>
+            <SettingItem label={t('web.settings.discord.status_embed_json_label')} htmlFor={cfg.embedJson.eid} required={states.botEnabled}>
                 <div className="flex flex-col gap-2">
                     <Textarea
                         id={cfg.embedJson.eid}
@@ -205,7 +285,7 @@ export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProp
                             onClick={() => cfg.embedJson.state.discard()}
                             disabled={pageCtx.isReadOnly}
                         >
-                            <XIcon className="mr-2 h-4 w-4" /> Discard Changes
+                            <XIcon className="mr-2 h-4 w-4" /> {t('web.settings.discord.discard_changes')}
                         </Button>
                         <Button
                             className="grow border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
@@ -213,16 +293,16 @@ export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProp
                             onClick={() => cfg.embedJson.state.default()}
                             disabled={pageCtx.isReadOnly}
                         >
-                            <RotateCcwIcon className="mr-2 h-4 w-4" /> Reset to Default
+                            <RotateCcwIcon className="mr-2 h-4 w-4" /> {t('web.settings.discord.reset_default')}
                         </Button>
                     </div>
                 </div>
                 <SettingItemDesc>
-                    The server status embed is customizable by editing the JSON above. <br />
-                    <strong>Note:</strong> Use the command <InlineCode>/status add</InlineCode> on a channel that the bot has the "Send Message" permission to setup the embed.
+                    {t('web.settings.discord.embed_desc1')} <br />
+                    <strong>{t('web.settings.whitelist.note')}</strong> {t('web.settings.discord.embed_desc3')} <InlineCode>/status add</InlineCode> {t('web.settings.discord.embed_desc4')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Status Config JSON" htmlFor={cfg.embedConfigJson.eid} required={states.botEnabled}>
+            <SettingItem label={t('web.settings.discord.status_config_json_label')} htmlFor={cfg.embedConfigJson.eid} required={states.botEnabled}>
                 <div className="flex flex-col gap-2">
                     <Textarea
                         id={cfg.embedConfigJson.eid}
@@ -241,7 +321,7 @@ export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProp
                             onClick={() => cfg.embedConfigJson.state.discard()}
                             disabled={pageCtx.isReadOnly}
                         >
-                            <XIcon className="mr-2 h-4 w-4" /> Discard Changes
+                            <XIcon className="mr-2 h-4 w-4" /> {t('web.settings.discord.discard_changes')}
                         </Button>
                         <Button
                             className="grow border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
@@ -249,13 +329,13 @@ export default function ConfigCardDiscord({ cardCtx, pageCtx }: SettingsCardProp
                             onClick={() => cfg.embedConfigJson.state.default()}
                             disabled={pageCtx.isReadOnly}
                         >
-                            <RotateCcwIcon className="mr-2 h-4 w-4" /> Reset to Default
+                            <RotateCcwIcon className="mr-2 h-4 w-4" /> {t('web.settings.discord.reset_default')}
                         </Button>
                     </div>
                 </div>
                 <SettingItemDesc>
-                    The server status embed is customizable by editing the JSON above. <br />
-                    <strong>Note:</strong> Use the command <InlineCode>/status add</InlineCode> on a channel that the bot has the "Send Message" permission to setup the embed.
+                    {t('web.settings.discord.embed_desc1')} <br />
+                    <strong>{t('web.settings.whitelist.note')}</strong> {t('web.settings.discord.embed_desc3')} <InlineCode>/status add</InlineCode> {t('web.settings.discord.embed_desc4')}
                 </SettingItemDesc>
             </SettingItem>
         </SettingsCardShell>

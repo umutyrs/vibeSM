@@ -16,12 +16,19 @@ export default async function DeployerStepper(ctx) {
         return ctx.utils.render('main/message', { message: 'You need to be the admin master to use the deployer.' });
     }
 
+    const { vibeConfigStoreContext } = require('@core/vibeSM');
+    const store = vibeConfigStoreContext.getStore();
+    const isMultiHostSetup = (store && store.serverId && store.serverId !== 'primary') || (ctx.query.serverId && ctx.query.serverId !== 'primary');
+
     //Ensure the correct state for the deployer
-    if(vibeManager.configState === TxConfigState.Setup) {
-        return ctx.utils.legacyNavigateToPage('/server/setup');
-    } else if(vibeManager.configState !== TxConfigState.Deployer) {
-        return ctx.utils.legacyNavigateToPage('/');
-    } else if(!vibeManager.deployer?.step){
+    if (!isMultiHostSetup) {
+        if(vibeManager.configState === TxConfigState.Setup) {
+            return ctx.utils.legacyNavigateToPage('/server/setup');
+        } else if(vibeManager.configState !== TxConfigState.Deployer) {
+            return ctx.utils.legacyNavigateToPage('/');
+        }
+    }
+    if(!vibeManager.deployer?.step){
         throw new Error(`vibeManager.configState is Deployer but vibeManager.deployer is not defined`);
     }
 

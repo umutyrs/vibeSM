@@ -2,6 +2,8 @@ import os from 'node:os';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import slash from 'slash';
+import dotenv from 'dotenv';
+
 
 import consoleFactory, { setConsoleEnvData } from '@lib/console';
 import { addLocalIpAddress } from '@lib/host/isIpAddressLocal';
@@ -14,7 +16,7 @@ import { getHostVars, hostEnvVarSchemas } from './boot/getHostVars';
 import { getZapVars } from './boot/getZapVars';
 import { z, ZodSchema } from 'zod';
 import { fromZodError } from 'zod-validation-error';
-import defaultAds from '../dynamicAds2.json';
+import fs from 'node:fs';
 import consts from '@shared/consts';
 const console = consoleFactory();
 
@@ -153,6 +155,8 @@ if (!nativeVars.txaResourcePath) {
     ]);
 }
 const txaPath = cleanPath(nativeVars.txaResourcePath);
+dotenv.config({ path: path.join(txaPath, '.env') });
+
 
 //Get citizen Root
 if (!nativeVars.fxsCitizenRoot) {
@@ -478,20 +482,62 @@ const adSchema = z.object({
     img: z.string(),
     url: z.string(),
 }).nullable();
+const adModalServerSchema = z.object({
+    name: z.string(),
+    url: z.string(),
+    subtext: z.string(),
+    img: z.string(),
+    color: z.string(),
+});
+const adModalSchema = z.object({
+    title: z.string(),
+    description: z.string(),
+    servers: z.array(adModalServerSchema),
+}).nullable().optional();
 const adsDataSchema = z.object({
     login: adSchema,
     main: adSchema,
+    adModal: adModalSchema,
 });
-let adsData: z.infer<typeof adsDataSchema> = {
-    login: null,
-    main: null,
+let defaultAds: any = { login: null, main: null, adModal: null };
+try {
+    const defaultAdsPath = path.join(txaPath, 'dynamicAds2.json');
+    if (fs.existsSync(defaultAdsPath)) {
+        defaultAds = JSON.parse(fs.readFileSync(defaultAdsPath, 'utf8'));
+    }
+} catch (e) {
+    console.error('Failed to load local dynamicAds2.json fallback config:', e);
+}
+
+export const adsObject = {
+    login: defaultAds.login ?? null,
+    main: defaultAds.main ?? null,
+    adModal: defaultAds.adModal ?? null,
 };
 if (displayAds) {
-    try {
-        adsData = adsDataSchema.parse(defaultAds);
-    } catch (error) {
-        console.error('Failed to load ads data.', error);
-    }
+    const fetchAds = async () => {
+        try {
+            const got = (await import('got')).default;
+            const targetUrl = process.env.VIBE_ADS_URL ?? 'http://vibesm.cc/api/community/ads';
+            const response = await got.get(targetUrl, {
+                timeout: { request: 5000 },
+                retry: { limit: 1 }
+            }).json<any>();
+            
+            const parsed = adsDataSchema.safeParse(response);
+            if (parsed.success) {
+                adsObject.login = parsed.data.login;
+                adsObject.main = parsed.data.main;
+                adsObject.adModal = parsed.data.adModal ?? null;
+            }
+        } catch (error) {
+            // fallback loaded initially
+        }
+    };
+    fetchAds().catch(() => {});
+    setInterval(() => {
+        fetchAds().catch(() => {});
+    }, 10 * 60 * 1000); // 10 minutes refresh
 }
 
 //FXServer Display Version
@@ -523,7 +569,7 @@ export const vibeEnv = Object.freeze({
     isPterodactyl, //TODO: remove, used only in HB Data
     isZapHosting, //TODO: remove, used only in HB Data and authLogic to disable src check
     displayAds,
-    adsData,
+    adsData: adsObject,
 
     //Natives
     fxsVersionTag,

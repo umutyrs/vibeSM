@@ -4,6 +4,7 @@ import { useOpenPromptDialog } from "@/hooks/dialogs";
 import { useLiveConsoleBookmarks, useLiveConsoleHistory } from "@/pages/LiveConsole/liveConsoleHooks";
 import { cn } from "@/lib/utils";
 import { PlusIcon, StarIcon, StarOffIcon, XIcon } from "lucide-react";
+import { useTranslation } from "@/hooks/translator";
 
 
 type SheetProps = {
@@ -30,11 +31,12 @@ function SheetBackdrop({ isOpen, closeSheet }: Omit<SheetProps, 'toTermInput'>) 
 
 
 function SheetCloseButton({ closeSheet }: Pick<SheetProps, 'closeSheet'>) {
+    const { t } = useTranslation();
     return (
         <button
             className="absolute right-4 top-4 rounded-sm opacity-70 ring-0 transition-opacity hover:opacity-100 focus:outline-none cursor-pointer"
             onClick={closeSheet}
-            title="Close"
+            title={t('web.liveconsole.bookmark.close')}
         >
             <XIcon className="h-8 w-8" />
         </button>
@@ -50,6 +52,7 @@ type SheetCommandProps = {
 }
 
 function SheetCommand({ cmd, type, onClick, onFavAction }: SheetCommandProps) {
+    const { t } = useTranslation();
     const handleFavAction = (event: React.MouseEvent) => {
         event.stopPropagation();
         onFavAction();
@@ -70,32 +73,33 @@ function SheetCommand({ cmd, type, onClick, onFavAction }: SheetCommandProps) {
                 >
                     {type === 'history' ? (<>
                         <StarIcon className="size-5" />
-                        <span className="sr-only">Save</span>
+                        <span className="sr-only">{t('web.liveconsole.bookmark.save')}</span>
                     </>) : (<>
                         <StarOffIcon className="size-5" />
-                        <span className="sr-only">Remove</span>
+                        <span className="sr-only">{t('web.liveconsole.bookmark.remove')}</span>
                     </>)}
                 </button>
             </div>
-        </div >
+        </div>
     )
 }
 
 
 function SheetContent({ toTermInput }: Pick<SheetProps, 'toTermInput'>) {
+    const { t } = useTranslation();
     const { history, wipeHistory } = useLiveConsoleHistory();
     const { bookmarks, addBookmark, removeBookmark } = useLiveConsoleBookmarks();
     const openPromptDialog = useOpenPromptDialog();
 
     const handleWipeHistory = () => {
-        txToast.success('History cleared');
+        txToast.success(t('web.liveconsole.bookmark.history_cleared'));
         wipeHistory();
     }
     const handleSaveCommand = () => {
         openPromptDialog({
-            title: 'Save Command',
-            message: 'Enter the command to save:',
-            submitLabel: 'Save',
+            title: t('web.liveconsole.bookmark.save_command'),
+            message: t('web.liveconsole.bookmark.prompt_msg'),
+            submitLabel: t('web.liveconsole.bookmark.save'),
             onSubmit: (cmd) => {
                 if (cmd) addBookmark(cmd);
             }
@@ -104,7 +108,7 @@ function SheetContent({ toTermInput }: Pick<SheetProps, 'toTermInput'>) {
     return (
         <div className="flex flex-row gap-4 max-h-full">
             <div className="flex flex-col flex-grow gap-2 w-1/2">
-                <h2 className="text-xl font-bold">History</h2>
+                <h2 className="text-xl font-bold">{t('web.liveconsole.bookmark.history_title')}</h2>
                 <ScrollArea className="max-h-full w-full pr-3 text-sm text-muted-foreground" style={{ wordBreak: 'break-word' }}>
                     <button
                         onClick={handleWipeHistory}
@@ -112,7 +116,7 @@ function SheetContent({ toTermInput }: Pick<SheetProps, 'toTermInput'>) {
                     >
                         <div className="flex items-center justify-center gap-2">
                             <XIcon className="w-4 h-4 inline" />
-                            Clear History
+                            {t('web.liveconsole.bookmark.clear_history')}
                         </div>
                     </button>
                     <div className="space-y-2 line-clamp-1 text-sm font-mono tracking-wide  pb-4">
@@ -128,13 +132,13 @@ function SheetContent({ toTermInput }: Pick<SheetProps, 'toTermInput'>) {
                     </div>
                     {history.length === 0 && (
                         <div className="w-full h-auto text-center italic tracking-wider">
-                            The command history is empty.
+                            {t('web.liveconsole.bookmark.history_empty')}
                         </div>
                     )}
                 </ScrollArea>
             </div>
             <div className="flex flex-col flex-grow gap-2 w-1/2">
-                <h2 className="text-xl font-bold">Saved</h2>
+                <h2 className="text-xl font-bold">{t('web.liveconsole.bookmark.saved_title')}</h2>
                 <ScrollArea className="max-h-full w-full pr-3 text-sm text-muted-foreground" style={{ wordBreak: 'break-word' }}>
                     <button
                         onClick={handleSaveCommand}
@@ -142,7 +146,7 @@ function SheetContent({ toTermInput }: Pick<SheetProps, 'toTermInput'>) {
                     >
                         <div className="flex items-center justify-center gap-2">
                             <PlusIcon className="w-4 h-4 inline" />
-                            Add New
+                            {t('web.liveconsole.bookmark.add_new')}
                         </div>
                     </button>
                     <div className="space-y-2 line-clamp-1 text-sm font-mono tracking-wide  pb-4">
@@ -158,8 +162,8 @@ function SheetContent({ toTermInput }: Pick<SheetProps, 'toTermInput'>) {
                     </div>
                     {bookmarks.length === 0 && (
                         <div className="w-full h-auto text-center italic tracking-wider">
-                            There are no saved commands. <br />
-                            To save a command, click the star icon next to it.
+                            {t('web.liveconsole.bookmark.saved_empty_1')} <br />
+                            {t('web.liveconsole.bookmark.saved_empty_2')}
                         </div>
                     )}
                 </ScrollArea>

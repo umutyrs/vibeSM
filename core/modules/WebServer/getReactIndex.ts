@@ -72,6 +72,10 @@ export const tmpCustomThemes: ThemeType[] = [
  * FIXME: add favicon
  */
 export default async function getReactIndex(ctx: CtxWithVars | AuthedCtx) {
+    const { vibeConfigStoreContext } = require('@core/vibeSM');
+    const store = vibeConfigStoreContext.getStore();
+    const activeVibeConfig = store?.vibeConfig ?? vibeConfig;
+
     //Read file if not cached
     if (txDevEnv.ENABLED || !htmlFile) {
         try {
@@ -108,7 +112,7 @@ export default async function getReactIndex(ctx: CtxWithVars | AuthedCtx) {
     }
 
     // Determine language to use
-    let lang = vibeConfig.general.language;
+    let lang = activeVibeConfig.general.language;
     const queryLang = ctx.query.lang;
     if (typeof queryLang === 'string' && queryLang) {
         lang = queryLang;
@@ -119,7 +123,7 @@ export default async function getReactIndex(ctx: CtxWithVars | AuthedCtx) {
         }
     }
     if (lang !== 'custom' && !localeMap[lang]) {
-        lang = vibeConfig.general.language;
+        lang = activeVibeConfig.general.language;
     }
 
     const locales = Object.keys(localeMap).map(code => ({
@@ -150,7 +154,9 @@ export default async function getReactIndex(ctx: CtxWithVars | AuthedCtx) {
 
         //Login page info
         server: {
-            name: vibeCore.cacheStore.getTyped('fxsRuntime:projectName', isString) ?? vibeConfig.general.serverName,
+            name: (store && store.serverId && store.serverId !== 'primary')
+                ? (store.vibeConfig?.general?.serverName ?? store.serverId)
+                : (vibeCore.cacheStore.getTyped('fxsRuntime:projectName', isString) ?? activeVibeConfig.general.serverName),
             game: vibeCore.cacheStore.getTyped('fxsRuntime:gameName', isString),
             icon: vibeCore.cacheStore.getTyped('fxsRuntime:iconFilename', isString),
         },
@@ -167,7 +173,7 @@ export default async function getReactIndex(ctx: CtxWithVars | AuthedCtx) {
     //Prepare placeholders
     const replacers: { [key: string]: string } = {};
     replacers.basePath = `<base href="${basePath}">`;
-    replacers.ogTitle = `vibeSM - ${vibeConfig.general.serverName}`;
+    replacers.ogTitle = `vibeSM - ${activeVibeConfig.general.serverName}`;
     replacers.ogDescripttion = `Manage & Monitor your FiveM/RedM Server with vibeSM v${vibeEnv.vibeVersion} atop FXServer ${vibeEnv.fxsVersion}`;
     replacers.txConstsInjection = `<script>window.txConsts = ${JSON.stringify(injectedConsts)};</script>`;
     replacers.devModules = txDevEnv.ENABLED ? devModulesScript : '';

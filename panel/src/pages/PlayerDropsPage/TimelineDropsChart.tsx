@@ -5,6 +5,7 @@ import drawDropsTimeline, { TimelineDropsDatum } from "./drawDropsTimeline";
 import { playerDropCategories } from "@/lib/playerDropCategories";
 import { PlayerDropsMessage } from "./PlayerDropsGenericSubcards";
 import { DrilldownRangeSelectionType } from "./PlayerDropsPage";
+import { useTranslation } from "@/hooks/translator";
 
 export type TimelineDropsChartData = {
     displayLod: string;
@@ -16,6 +17,7 @@ export type TimelineDropsChartData = {
 }
 
 const ChartLabels = memo(({ categories }: { categories: string[] }) => {
+    const { t } = useTranslation();
     const categoriesReversed = categories.slice().reverse();
     return categoriesReversed.map((catName) => {
         return (
@@ -28,7 +30,7 @@ const ChartLabels = memo(({ categories }: { categories: string[] }) => {
                     }}
                 />
                 <span className="tracking-wider">
-                    {playerDropCategories[catName].label}:
+                    {t(`web.player_drops.category.${catName}.label`)}:
                 </span>
                 <div className="flex-grow text-right font-semibold min-w-[3ch] text-muted-foreground">
                     <span data-category={catName} />
@@ -48,6 +50,7 @@ type TimelineDropsChartProps = {
 };
 
 function TimelineDropsChart({ chartData, chartName, width, height, rangeSelected, rangeSetter }: TimelineDropsChartProps) {
+    const { t } = useTranslation();
     const svgRef = useRef<SVGSVGElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const legendRef = useRef<HTMLDivElement>(null);
@@ -107,7 +110,7 @@ function TimelineDropsChart({ chartData, chartName, width, height, rangeSelected
     if (!width || !height) return null;
     if (renderError) {
         return <div className="absolute inset-0 p-4 flex flex-col gap-4 items-center justify-center text-center text-lg font-mono text-destructive-inline">
-            Render Error: {renderError}
+            {t('web.player_drops.render_error', { error: renderError })}
             <br />
             <Button
                 size={'sm'}
@@ -118,11 +121,11 @@ function TimelineDropsChart({ chartData, chartName, width, height, rangeSelected
                     setRenderError('');
                 }}
             >
-                Retry{errorRetry ? ` (${errorRetry})` : ''}
+                {t('web.player_drops.retry')}{errorRetry ? ` (${errorRetry})` : ''}
             </Button>
         </div>
     } else if (!chartData.maxDrops) {
-        return <PlayerDropsMessage message="No players disconnected from your server recently." />
+        return <PlayerDropsMessage message={t('web.player_drops.no_disconnects_recent')} />
     }
     return (<>
         <div

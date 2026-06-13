@@ -7,7 +7,9 @@ import type { GlobalStatusType } from "@shared/socketioTypes";
 import quitProcess from "@lib/quitProcess";
 import consoleFactory, { processStdioEnsureEol, setTTYTitle } from "@lib/console";
 import { isNumber, isString } from "@modules/CacheStore";
+import { setupTelemetry } from "./modules/Telemetry";
 const console = consoleFactory('Manager');
+
 
 //Types
 type gameNames = 'fivem' | 'redm';
@@ -78,7 +80,13 @@ export default class TxManager {
         setTimeout(() => {
             getHostData().catch((e) => { });
         }, 10_000);
+
+        // Telemetry Reporting
+        setupTelemetry().catch((err) => {
+            console.verbose.error(`Telemetry setup failed: ${err.message}`);
+        });
     }
+
 
 
     /**
@@ -224,9 +232,14 @@ export default class TxManager {
                 healthReason = isOnline ? 'Running' : 'Starting';
             }
 
+            const isConfigured = typeof store.vibeConfig?.server?.dataPath === 'string'
+                && store.vibeConfig.server.dataPath.length > 0
+                && typeof store.vibeConfig.server.cfgPath === 'string'
+                && store.vibeConfig.server.cfgPath.length > 0;
+
             return {
-                configState: TxConfigState.Ready,
-                discord: 'disabled',
+                configState: isConfigured ? TxConfigState.Ready : TxConfigState.Setup,
+                discord: vibeCore.discordBot.status,
                 runner: {
                     isIdle: !isRunning,
                     isChildAlive: isRunning,

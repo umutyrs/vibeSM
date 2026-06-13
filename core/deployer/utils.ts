@@ -14,7 +14,7 @@ export const validateTargetPath = async (deployPath: string) => {
     }
     try {
         const pathFiles = await getPathFiles(deployPath);
-        if (pathFiles.some((x) => x.name !== EMPTY_FILE_NAME)) {
+        if (pathFiles.some((x) => x.name !== EMPTY_FILE_NAME && x.name !== 'config.json')) {
             throw new Error('This folder already exists and is not empty!');
         }
     } catch (error) {

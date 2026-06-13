@@ -17,6 +17,10 @@ export { default as auth_self } from './authentication/self';
 export { default as auth_logout } from './authentication/logout';
 export { default as auth_getIdentifiers } from './authentication/getIdentifiers';
 export { default as auth_changeIdentifiers } from './authentication/changeIdentifiers';
+export { default as auth_confirm2faLogin } from './authentication/confirm2faLogin';
+export { default as auth_setup2fa } from './authentication/setup2fa';
+export { default as auth_enable2fa } from './authentication/enable2fa';
+export { default as auth_disable2fa } from './authentication/disable2fa';
 
 export { default as adminManager_page } from './adminManager/page.js';
 export { default as adminManager_getModal } from './adminManager/getModal';
@@ -82,4 +86,7 @@ export {
 } from './devDebug.js';
 
 export * as multiHosting from './multiHosting';
+export { default as publicStatus } from './publicStatus';
+export { default as communityAds } from './communityAds';
+
 

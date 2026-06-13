@@ -17,7 +17,7 @@ import terminalOptions from './LiveConsole/xtermOptions';
 import ScrollDownAddon from './LiveConsole/ScrollDownAddon';
 import LiveConsoleSearchBar from './LiveConsole/LiveConsoleSearchBar';
 import { useBackendApi } from '@/hooks/fetch';
-
+import { useTranslation } from '@/hooks/translator';
 
 //Helpers
 const keyDebounceTime = 150; //ms
@@ -25,9 +25,9 @@ type SystemLogPageProps = {
     pageName: 'console' | 'action';
 };
 
-
 //NOTE: most of this code is yoinked from the live console page
 export default function SystemLogPage({ pageName }: SystemLogPageProps) {
+    const { t } = useTranslation();
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
     const [showSearchBar, setShowSearchBar] = useState(false);
@@ -37,7 +37,6 @@ export default function SystemLogPage({ pageName }: SystemLogPageProps) {
         path: `/systemLog/${pageName}`,
         throwGenericErrors: true,
     });
-
 
     /**
      * xterm stuff
@@ -134,13 +133,13 @@ export default function SystemLogPage({ pageName }: SystemLogPageProps) {
 
             //fetch logs
             getLogsApi({
-                success: (resp, toastId) => {
+                success: (resp) => {
                     setIsLoading(false);
                     writeToTerminal(resp.data);
                     term.writeln('');
-                    term.writeln('\u001b[33m[END OF LOG - REFRESH THE PAGE TO LOAD MORE]\u001b');
+                    term.writeln(`\u001b[33m${t('web.system_log.end_of_log')}\u001b`);
                 },
-                error: (message, toastId) => {
+                error: (message) => {
                     setIsLoading(false);
                     setLoadError(message);
                 },
@@ -186,11 +185,11 @@ export default function SystemLogPage({ pageName }: SystemLogPageProps) {
     }
 
     //Rendering stuff
-    let pageTitle = 'Console Log';
-    let pageSubtitle = 'Output of vibeSM to it\'s parent terminal, including usually hidden debug messages.';
+    let pageTitle = t('web.system_log.console_title');
+    let pageSubtitle = t('web.system_log.console_desc');
     if (pageName === 'action') {
-        pageTitle = 'Action Log';
-        pageSubtitle = 'Log of all actions taken by vibeSM or any admin.';
+        pageTitle = t('web.system_log.action_title');
+        pageSubtitle = t('web.system_log.action_desc');
     }
 
     return (
@@ -223,7 +222,7 @@ export default function SystemLogPage({ pageName }: SystemLogPageProps) {
                         <div className='flex flex-col gap-6 items-center justify-center text-muted-foreground select-none'>
                             <Loader2Icon className='w-16 h-16 animate-spin' />
                             <h2 className='text-3xl tracking-wider font-light animate-pulse'>
-                                &nbsp;&nbsp;&nbsp;Loading...
+                                &nbsp;&nbsp;&nbsp;{t('web.system_log.loading')}
                             </h2>
                         </div>
                     </div>
@@ -231,7 +230,7 @@ export default function SystemLogPage({ pageName }: SystemLogPageProps) {
                 {loadError && (
                     <div className='absolute inset-0 z-20 bg-black/60 flex flex-col gap-4 items-center justify-center'>
                         <h2 className='text-2xl tracking-wider font-light text-muted-foreground select-none'>
-                            Error fetching {pageTitle}:
+                            {t('web.system_log.err_fetching', { title: pageTitle })}
                         </h2>
                         <p className='mx-8 max-w-screen-md text-destructive-inline font-mono'>
                             {loadError}

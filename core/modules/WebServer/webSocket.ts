@@ -297,7 +297,9 @@ export default class WebSocket {
                 dyn = {
                     baseRoomName,
                     cumulativeBuffer: baseRoom.cumulativeBuffer,
-                    outBuffer: baseRoom.cumulativeBuffer ? [] : null,
+                    outBuffer: baseRoom.cumulativeBuffer
+                        ? (Array.isArray(baseRoom.outBuffer) ? [] : (typeof baseRoom.outBuffer === 'string' ? '' : null))
+                        : null,
                 };
                 this.#dynamicBuffers.set(roomName, dyn);
             }

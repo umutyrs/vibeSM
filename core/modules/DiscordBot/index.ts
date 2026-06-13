@@ -5,7 +5,7 @@ import interactionCreateHandler from './interactionCreateHandler';
 import { generateStatusMessage } from './commands/status';
 import consoleFactory from '@lib/console';
 import { embedColors } from './discordHelpers';
-import { DiscordBotStatus } from '@shared/enums';
+import { DiscordBotStatus, FxMonitorHealth } from '@shared/enums';
 import { UpdateConfigKeySet } from '@modules/ConfigStore/utils';
 const console = consoleFactory(modulename);
 
@@ -23,7 +23,7 @@ type AnnouncementType = {
 
 type SpawnConfig = Pick<
     TxConfigs['discordBot'],
-    'enabled' | 'token' | 'guild' | 'warningsChannel'
+    'enabled' | 'token' | 'guild' | 'warningsChannel' | 'allowDangerousPermissions'
 >;
 
 
@@ -65,7 +65,7 @@ export default class DiscordBot {
     #lastExplicitStatus = DiscordBotStatus.Disabled;
 
 
-    constructor() {
+    constructor(public readonly serverId: string = 'primary') {
         // FIXME: Hacky solution to fix the issue with disallowed intents
         // Remove this when issue below is fixed 
         // https://github.com/discordjs/discord.js/issues/9621
@@ -76,14 +76,16 @@ export default class DiscordBot {
         });
 
         setImmediate(() => {
-            if (vibeConfig.discordBot.enabled) {
+            const config = this.getConfig();
+            if (config?.enabled) {
                 this.startBot()?.catch((e) => { });
             }
         });
 
         //Cron
         setInterval(() => {
-            if (vibeConfig.discordBot.enabled) {
+            const config = this.getConfig();
+            if (config?.enabled) {
                 this.updateBotStatus().catch((e) => { });
             }
         }, 60_000);
@@ -92,6 +94,16 @@ export default class DiscordBot {
         setInterval(() => {
             this.refreshWsStatus();
         }, 7500);
+    }
+
+    getConfig() {
+        if (this.serverId === 'primary') {
+            return vibeConfig.discordBot;
+        } else {
+            const { configStoreInstances } = require('../../routes/multiHosting');
+            const store = configStoreInstances.get(this.serverId);
+            return store?.activeConfigs?.discordBot;
+        }
     }
 
 
@@ -135,7 +147,7 @@ export default class DiscordBot {
      * Passthrough to discord.js websocket status
      */
     get status(): DiscordBotStatus {
-        if (!vibeConfig.discordBot.enabled) {
+        if (!this.getConfig()?.enabled) {
             return DiscordBotStatus.Disabled;
         } else if (this.#client?.ws.status === Discord.Status.Ready) {
             return DiscordBotStatus.Ready;
@@ -159,9 +171,10 @@ export default class DiscordBot {
      * Send an announcement to the configured channel
      */
     async sendAnnouncement(content: AnnouncementType) {
-        if (!vibeConfig.discordBot.enabled) return;
+        const config = this.getConfig();
+        if (!config?.enabled) return;
         if (
-            !vibeConfig.discordBot.warningsChannel
+            !config.warningsChannel
             || !this.#client?.isReady()
             || !this.announceChannel
         ) {
@@ -202,11 +215,98 @@ export default class DiscordBot {
 
         //Updating bot activity
         try {
-            const serverClients = vibeCore.fxPlayerlist.onlineCount;
-            const serverMaxClients = vibeCore.cacheStore.get('fxsRuntime:maxClients') ?? '??';
-            const serverName = vibeConfig.general.serverName;
-            const message = `[${serverClients}/${serverMaxClients}] on ${serverName}`;
-            this.#client.user.setActivity(message, { type: ActivityType.Watching });
+            const botConfig = this.getConfig();
+            // For secondary servers, resolve player count from the server's mutex
+            let serverClients: string;
+            let serverMaxClients: string;
+            let serverName: string;
+            if (this.serverId !== 'primary') {
+                // Find the mutex for this serverId
+                let serverMutex: string | undefined;
+                if ((globalThis as any).multiHostingMutexes instanceof Map) {
+                    for (const [m, id] of (globalThis as any).multiHostingMutexes.entries()) {
+                        if (id === this.serverId) {
+                            serverMutex = m;
+                            break;
+                        }
+                    }
+                }
+                serverClients = serverMutex
+                    ? vibeCore.fxPlayerlist.getOnlineCount(serverMutex).toString()
+                    : '0';
+                serverMaxClients = '??';
+                // Get server name from multi-hosting config
+                try {
+                    const { readServers, configStoreInstances } = require('../../routes/multiHosting');
+                    const store = configStoreInstances.get(this.serverId);
+                    serverName = store?.activeConfigs?.general?.serverName || this.serverId;
+                    // Try to read sv_projectName from the server's cfg
+                    const servers = await readServers();
+                    const srv = servers.find((s: any) => s.id === this.serverId);
+                    if (srv) {
+                        const fs = require('node:fs');
+                        if (fs.existsSync(srv.cfgPath)) {
+                            const content = fs.readFileSync(srv.cfgPath, 'utf8');
+                            const match = content.match(/^\s*(?:set|sets)?[ \t]+sv_projectName[ \t]+["']?([^"\r\n']+)["']?/mi);
+                            if (match && match[1]) {
+                                serverName = match[1].trim();
+                            }
+                            // Also try to extract sv_maxclients
+                            const maxMatch = content.match(/^\s*sv_maxclients[ \t]+["']?(\d+)["']?/mi);
+                            if (maxMatch && maxMatch[1]) {
+                                serverMaxClients = maxMatch[1];
+                            }
+                        }
+                    }
+                } catch (e) {
+                    serverName = this.serverId;
+                }
+            } else {
+                serverClients = vibeCore.fxPlayerlist.onlineCount.toString();
+                serverMaxClients = (vibeCore.cacheStore.get('fxsRuntime:maxClients') ?? '??').toString();
+                serverName = vibeConfig.general.serverName;
+                try {
+                    const { resolveCFGFilePath } = require('@lib/fxserver/fxsConfigHelper');
+                    const fs = require('node:fs');
+                    const cfgPath = resolveCFGFilePath(vibeConfig.server.cfgPath, vibeConfig.server.dataPath);
+                    if (fs.existsSync(cfgPath)) {
+                        const content = fs.readFileSync(cfgPath, 'utf8');
+                        const match = content.match(/^\s*(?:set|sets)?[ \t]+sv_projectName[ \t]+["']?([^"\r\n']+)["']?/mi);
+                        if (match && match[1]) {
+                            serverName = match[1].trim();
+                        }
+                    }
+                } catch (e) {
+                    // Fallback to general.serverName
+                }
+            }
+
+            const isStarting = vibeCore.fxMonitor?.status?.health === FxMonitorHealth.STARTING;
+            let descPattern;
+            if (isStarting) {
+                descPattern = botConfig?.activityDescriptionStarting || 'Server starting...';
+            } else {
+                descPattern = botConfig?.activityDescription || '[{{players}}/{{maxClients}}] on {{serverName}}';
+                descPattern = descPattern
+                    .replace(/\{\{players\}\}/g, serverClients)
+                    .replace(/\[players\]/g, serverClients)
+                    .replace(/\{\{maxClients\}\}/g, serverMaxClients)
+                    .replace(/\[maxClients\]/g, serverMaxClients)
+                    .replace(/\{\{serverName\}\}/g, serverName)
+                    .replace(/\[serverName\]/g, serverName);
+            }
+
+            const activityTypeMap: Record<string, ActivityType> = {
+                playing: ActivityType.Playing,
+                streaming: ActivityType.Streaming,
+                listening: ActivityType.Listening,
+                watching: ActivityType.Watching,
+                competing: ActivityType.Competing,
+            };
+            const rawType = botConfig?.activityType || 'watching';
+            const actType = activityTypeMap[rawType] ?? ActivityType.Watching;
+
+            this.#client.user.setActivity(descPattern, { type: actType });
         } catch (error) {
             console.verbose.warn(`Failed to set bot activity: ${(error as Error).message}`);
         }
@@ -235,11 +335,13 @@ export default class DiscordBot {
      */
     startBot(botCfg?: SpawnConfig) {
         const isConfigSaveAttempt = !!botCfg;
+        const resolvedConfig = this.getConfig();
         botCfg ??= {
-            enabled: vibeConfig.discordBot.enabled,
-            token: vibeConfig.discordBot.token,
-            guild: vibeConfig.discordBot.guild,
-            warningsChannel: vibeConfig.discordBot.warningsChannel,
+            enabled: resolvedConfig?.enabled ?? false,
+            token: resolvedConfig?.token,
+            guild: resolvedConfig?.guild,
+            warningsChannel: resolvedConfig?.warningsChannel,
+            allowDangerousPermissions: resolvedConfig?.allowDangerousPermissions,
         }
         if (!botCfg.enabled) return;
 
@@ -342,10 +444,14 @@ export default class DiscordBot {
                     const perms = prohibitedPermsInUse.includes('Administrator')
                         ? 'Administrator'
                         : prohibitedPermsInUse.join(', ');
-                    return sendError(
-                        `This bot (${name}) has dangerous permissions (${perms}) and for your safety the bot has been disabled.`,
-                        { code: 'DangerousPermission' }
-                    );
+                    if (!botCfg.allowDangerousPermissions) {
+                        return sendError(
+                            `This bot (${name}) has dangerous permissions (${perms}) and for your safety the bot has been disabled.`,
+                            { code: 'DangerousPermission' }
+                        );
+                    } else {
+                        console.warn(`Starting Discord Bot with dangerous permissions (${perms}) because 'Allow Dangerous Permissions' is enabled.`);
+                    }
                 }
 
                 //Fetching announcements channel
@@ -420,7 +526,7 @@ export default class DiscordBot {
      * Refreshes the bot guild member cache
      */
     async refreshMemberCache() {
-        if (!vibeConfig.discordBot.enabled) throw new Error(`discord bot is disabled`);
+        if (!this.getConfig()?.enabled) throw new Error(`discord bot is disabled`);
         if (!this.#client?.isReady()) throw new Error(`discord bot not ready yet`);
         if (!this.guild) throw new Error(`guild not resolved`);
 
@@ -443,7 +549,7 @@ export default class DiscordBot {
      * Return if an ID is a guild member, and their roles
      */
     async resolveMemberRoles(uid: string) {
-        if (!vibeConfig.discordBot.enabled) throw new Error(`discord bot is disabled`);
+        if (!this.getConfig()?.enabled) throw new Error(`discord bot is disabled`);
         if (!this.#client?.isReady()) throw new Error(`discord bot not ready yet`);
         if (!this.guild) throw new Error(`guild not resolved`);
 

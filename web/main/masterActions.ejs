@@ -329,25 +329,11 @@
         <button class="vibe-tab active" data-tab="general">General</button>
         <button class="vibe-tab" data-tab="cleandb">Clean Database</button>
         <button class="vibe-tab" data-tab="revokewl">Revoke Whitelists</button>
+        <button class="vibe-tab" data-tab="artifacts">Artifacts Updater</button>
     </div>
 
     <!-- ═══ General Tab ═══ -->
     <div class="vibe-panel active" id="panel-general">
-        <div class="vibe-section">
-            <div class="vibe-section-content">
-                <div class="vibe-section-title">Reset FXServer</div>
-                <div class="vibe-section-desc">
-                    <span class="vibe-moved-notice">↗ Moved</span> &nbsp;
-                    This option has been moved to the <a href="#" onclick="navigateParentTo('/settings#fxserver')">Settings → FXServer</a> page.
-                </div>
-            </div>
-            <div class="vibe-section-action">
-                <button class="vibe-btn vibe-btn-ghost" onclick="navigateParentTo('/settings#fxserver')">
-                    Go To Settings
-                </button>
-            </div>
-        </div>
-
         <div class="vibe-section">
             <div class="vibe-section-content">
                 <div class="vibe-section-title">Backup Database</div>
@@ -462,6 +448,63 @@
             </button>
         </div>
     </div>
+
+    <!-- ═══ Artifacts Updater Tab ═══ -->
+    <div class="vibe-panel" id="panel-artifacts">
+        <div class="vibe-panel-alert vibe-panel-alert-warning" style="text-align: left; line-height: 1.6;">
+            <strong>ℹ Artifacts Updater:</strong> Downloads the specified FXServer artifacts build, extracts it to a parallel directory (e.g. <code>server_updated_&lt;build&gt;</code>), and copies your custom <strong>vibeSM</strong> resource over standard txAdmin. You will then manually rename/swap folders and restart the host.
+        </div>
+
+        <div class="vibe-form-group">
+            <label class="vibe-form-label" for="artifacts-build">Select Build</label>
+            <div class="vibe-form-field">
+                <select id="artifacts-build" class="vibe-select" required>
+                    <option value="recommended" selected>Latest Recommended (<%= versions.recommended %>)</option>
+                    <option value="optional">Latest Optional (<%= versions.optional %>)</option>
+                    <option value="latest">Latest (<%= versions.latest %>)</option>
+                    <option value="custom">Custom Build Number...</option>
+                </select>
+                <div class="vibe-form-hint">
+                    Choose the target FXServer build channel to prepare.
+                </div>
+            </div>
+        </div>
+
+        <div class="vibe-form-group" id="artifacts-custom-group" style="display: none;">
+            <label class="vibe-form-label" for="artifacts-custom-number">Build Number</label>
+            <div class="vibe-form-field">
+                <input id="artifacts-custom-number" type="number" class="vibe-select" placeholder="e.g. 7290" style="background-image: none; padding-right: 14px;" />
+                <div class="vibe-form-hint">
+                    Specify the numeric build number from runtime.fivem.net.
+                </div>
+            </div>
+        </div>
+
+        <div id="artifacts-progress-card" style="display: none; margin-top: 20px; padding: 18px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px;">
+            <div style="font-weight: 600; color: #fff; font-size: 0.85rem; margin-bottom: 8px; font-family: 'Outfit', sans-serif;">Status / Log Output:</div>
+            <div id="artifacts-progress-log" style="font-family: 'Space Grotesk', sans-serif; font-size: 0.78rem; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                Ready to start...
+            </div>
+            
+            <div id="artifacts-progress-container" style="width: 100%; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin-top: 12px; margin-bottom: 12px;">
+                <div id="artifacts-progress-bar" style="width: 0%; height: 100%; background: rgb(244, 63, 94); transition: width 0.3s ease; border-radius: 4px;"></div>
+            </div>
+            
+            <div id="artifacts-instructions-banner" style="display: none; margin-top: 15px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; color: #10b981; font-size: 0.8rem; line-height: 1.6;">
+                <strong>✔ Artifacts Prepared Successfully!</strong><br>
+                1. Stop your FXServer host process.<br>
+                2. Rename your active <code>server</code> directory to <code>server_backup</code>.<br>
+                3. Rename <code><span id="artifacts-new-path">server_updated_xxx</span></code> to <code>server</code>.<br>
+                4. Restart the FXServer host. Your custom vibeSM configurations are fully preserved!
+            </div>
+        </div>
+
+        <div class="vibe-submit-area">
+            <button class="vibe-btn vibe-btn-danger" id="artifacts-submitButton" <%= disableActions %>>
+                ⚡ Prepare Artifacts
+            </button>
+        </div>
+    </div>
 </div>
 
 
@@ -469,13 +512,18 @@
 
 
 <script>
+    // Local scope compatibility mapping to avoid cache issues
+    const txAdminConfirm = window.txAdminConfirm || window.vibeSMConfirm;
+    const txAdminAlert = window.txAdminAlert || window.vibeSMAlert;
+    const txAdminPrompt = window.txAdminPrompt || window.vibeSMPrompt;
+
     //============================================== Tab switching
     (()=>{
         const tabs = document.querySelectorAll('.vibe-tab');
         const panels = document.querySelectorAll('.vibe-panel');
 
         // Read hash from URL
-        const hashMap = { '#cleandb': 'cleandb', '#revokewl': 'revokewl' };
+        const hashMap = { '#cleandb': 'cleandb', '#revokewl': 'revokewl', '#artifacts': 'artifacts' };
         const initialTab = hashMap[window.location.hash] || 'general';
 
         function switchTab(tabId) {
@@ -621,5 +669,97 @@
                 }
             });
         }
+    })();
+
+    //============================================== Artifacts Updater
+    (() => {
+        const buildSelect = document.getElementById('artifacts-build');
+        const customGroup = document.getElementById('artifacts-custom-group');
+        const customNumber = document.getElementById('artifacts-custom-number');
+        const submitBtn = document.getElementById('artifacts-submitButton');
+        
+        const progressCard = document.getElementById('artifacts-progress-card');
+        const progressLog = document.getElementById('artifacts-progress-log');
+        const instructionsBanner = document.getElementById('artifacts-instructions-banner');
+        const newPathSpan = document.getElementById('artifacts-new-path');
+
+        buildSelect.addEventListener('change', () => {
+            customGroup.style.display = (buildSelect.value === 'custom') ? 'flex' : 'none';
+        });
+
+        let pollInterval = null;
+
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(() => {
+                txAdminAPI({
+                    type: "POST",
+                    url: '/masterActions/getArtifactsUpdateStatus',
+                    success: function (status) {
+                        if (status.step) {
+                            progressLog.innerHTML = `<strong>Step:</strong> ${status.step}`;
+                        }
+                        if (status.progress !== undefined) {
+                            const bar = document.getElementById('artifacts-progress-bar');
+                            if (bar) bar.style.width = status.progress + '%';
+                        }
+                        if (status.error) {
+                            progressLog.innerHTML = `<span style="color: #ef4444;"><strong>Error:</strong> ${status.error}</span>`;
+                            submitBtn.disabled = false;
+                            clearInterval(pollInterval);
+                        }
+                        if (status.success) {
+                            progressLog.innerHTML = `<span style="color: #10b981;"><strong>Status:</strong> Ready at ${status.targetPath}</span>`;
+                            newPathSpan.textContent = status.targetPath;
+                            instructionsBanner.style.display = 'block';
+                            submitBtn.disabled = false;
+                            clearInterval(pollInterval);
+                        }
+                    },
+                    error: function (xmlhttprequest, textstatus, message) {
+                        console.error('Failed to poll status', message);
+                    }
+                });
+            }, 2000);
+        }
+
+        submitBtn.onclick = async () => {
+            const targetChannel = (buildSelect.value === 'custom') ? customNumber.value.trim() : buildSelect.value;
+            if (!targetChannel) {
+                return $.notify({ message: 'Please enter a valid build number.' }, {type: 'danger'});
+            }
+
+            // Confirm action
+            const confirmOptions = {
+                title: 'Confirm Artifact Preparation:',
+                content: `This will download, verify, and extract FXServer artifacts for selection: <strong>${targetChannel}</strong>. Proceed?`
+            };
+            if (!await txAdminConfirm(confirmOptions)) return;
+
+            submitBtn.disabled = true;
+            progressCard.style.display = 'block';
+            instructionsBanner.style.display = 'none';
+            progressLog.textContent = 'Triggering preparation on server...';
+
+            txAdminAPI({
+                type: "POST",
+                url: `/masterActions/triggerArtifactsUpdate`,
+                data: {
+                    channel: targetChannel
+                },
+                success: function (data) {
+                    if (data.error) {
+                        progressLog.innerHTML = `<span style="color: #ef4444;"><strong>Error:</strong> ${data.error}</span>`;
+                        submitBtn.disabled = false;
+                    } else {
+                        startPolling();
+                    }
+                },
+                error: function (xmlhttprequest, textstatus, message) {
+                    progressLog.innerHTML = `<span style="color: #ef4444;"><strong>Error:</strong> ${message}</span>`;
+                    submitBtn.disabled = false;
+                }
+            });
+        };
     })();
 </script>

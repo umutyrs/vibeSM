@@ -72,16 +72,19 @@ const topLevelMw = async (ctx: RawKoaCtx, next: Next) => {
         } else if (error.message === 'route_timed_out') {
             const desc = `${prefix} Route timed out: ${reqPath}`;
             ctx.status = 408;
-            ctx.body = desc;
+            ctx.type = 'application/json';
+            ctx.body = { error: desc };
             if (consumePrintToken()) console.error(desc, methodName);
         } else if (error.message === 'Malicious Path' || error.message === 'failed to decode') {
             const desc = `${prefix} Malicious Path: ${reqPath}`;
             ctx.status = 406;
-            ctx.body = desc;
+            ctx.type = 'application/json';
+            ctx.body = { error: desc };
             if (consumePrintToken()) console.verbose.error(desc, methodName);
         } else if (error.message.startsWith('Unexpected token')) {
             const desc = `${prefix} Invalid JSON for: ${reqPath}`;
             ctx.status = 400;
+            ctx.type = 'application/json';
             ctx.body = { error: desc };
             if (consumePrintToken()) console.verbose.error(desc, methodName);
         } else {
@@ -92,7 +95,8 @@ const topLevelMw = async (ctx: RawKoaCtx, next: Next) => {
                 'Make sure your vibeSM is updated.',
             ].join('\n');
             ctx.status = 500;
-            ctx.body = desc;
+            ctx.type = 'application/json';
+            ctx.body = { error: desc };
             if (consumePrintToken()) {
                 console.error(desc, methodName);
                 console.verbose.dir(error);

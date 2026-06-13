@@ -58,6 +58,34 @@ const embedConfigJson = typeDefinedConfig({
     fixer: SYM_FIXER_DEFAULT,
 });
 
+const activityDescription = typeDefinedConfig({
+    name: 'Activity Description',
+    default: '[{{players}}/{{maxClients}}] on {{serverName}}',
+    validator: z.string().min(1),
+    fixer: SYM_FIXER_DEFAULT,
+});
+
+const activityType = typeDefinedConfig({
+    name: 'Activity Type',
+    default: 'watching',
+    validator: z.enum(['playing', 'streaming', 'listening', 'watching', 'competing']),
+    fixer: SYM_FIXER_DEFAULT,
+});
+
+const allowDangerousPermissions = typeDefinedConfig({
+    name: 'Allow Dangerous Permissions',
+    default: false,
+    validator: z.boolean(),
+    fixer: SYM_FIXER_DEFAULT,
+});
+
+
+const activityDescriptionStarting = typeDefinedConfig({
+    name: 'Activity Description Starting',
+    default: 'Server starting...',
+    validator: z.string().min(1),
+    fixer: SYM_FIXER_DEFAULT,
+});
 
 export default {
     enabled,
@@ -66,4 +94,8 @@ export default {
     warningsChannel,
     embedJson,
     embedConfigJson,
+    activityDescription,
+    activityDescriptionStarting,
+    activityType,
+    allowDangerousPermissions,
 } as const;

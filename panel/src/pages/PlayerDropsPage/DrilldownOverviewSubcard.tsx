@@ -3,6 +3,7 @@ import { numberToLocaleString } from "@/lib/utils";
 import { PlayerDropsMessage } from "./PlayerDropsGenericSubcards";
 import { playerDropCategories } from "@/lib/playerDropCategories";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "@/hooks/translator";
 
 type DisplayCategoryDatum = {
     label: string;
@@ -16,6 +17,7 @@ type DrilldownOverviewSubcardProps = {
 };
 
 export default function DrilldownOverviewSubcard({ dropTypes }: DrilldownOverviewSubcardProps) {
+    const { t } = useTranslation();
     let { totalDrops, categories } = useMemo(() => {
         let totalDrops = 0;
         const categories: Record<string, DisplayCategoryDatum> = {};
@@ -23,8 +25,8 @@ export default function DrilldownOverviewSubcard({ dropTypes }: DrilldownOvervie
             totalDrops += cnt;
             if (!(cat in playerDropCategories)) continue;
             categories[cat] = {
-                label: playerDropCategories[cat].label,
-                tooltip: playerDropCategories[cat].description,
+                label: t(`web.player_drops.category.${cat}.label`),
+                tooltip: t(`web.player_drops.category.${cat}.desc`),
                 color: playerDropCategories[cat].color,
                 count: cnt,
             };
@@ -33,19 +35,18 @@ export default function DrilldownOverviewSubcard({ dropTypes }: DrilldownOvervie
             totalDrops,
             categories: Object.entries(categories),
         };
-    }, [dropTypes]);
+    }, [dropTypes, t]);
 
     if (!categories.length) {
-        return <PlayerDropsMessage message="No player drops within this time window." />;
+        return <PlayerDropsMessage message={t('web.player_drops.no_drops_window')} />;
     }
 
     return (
         <div className="px-4 py-4 flex flex-wrap justify-evenly gap-4 text-muted-foreground">
             {categories.map(([reasonId, reasonData]) => (
-                <Tooltip>
+                <Tooltip key={reasonId}>
                     <TooltipTrigger asChild>
                         <div
-                            key={reasonId}
                             className="px-4 flex flex-col gap-1 items-center justify-center"
                         >
                             <span

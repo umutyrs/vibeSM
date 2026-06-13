@@ -11,6 +11,7 @@ import { useIsDarkMode } from '@/hooks/theme';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useSetAtom } from 'jotai';
+import { useTranslation } from '@/hooks/translator';
 
 
 type FullPerfChartProps = {
@@ -23,6 +24,7 @@ type FullPerfChartProps = {
 };
 
 const FullPerfChart = memo(({ threadName, apiData, apiDataAge, width, height, isDarkMode }: FullPerfChartProps) => {
+    const { t } = useTranslation();
     const setServerStats = useSetAtom(dashServerStatsAtom);
     const svgRef = useRef<SVGSVGElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -103,7 +105,7 @@ const FullPerfChart = memo(({ threadName, apiData, apiDataAge, width, height, is
     if (!width || !height) return null;
     if (renderError) {
         return <div className="absolute inset-0 p-4 flex flex-col gap-4 items-center justify-center text-center text-lg font-mono text-destructive-inline">
-            Render Error: {renderError}
+            {t('web.dashboard.full_perf.render_error', { error: renderError })}
             <br />
             <Button
                 size={'sm'}
@@ -114,7 +116,7 @@ const FullPerfChart = memo(({ threadName, apiData, apiDataAge, width, height, is
                     setRenderError('');
                 }}
             >
-                Retry{errorRetry ? ` (${errorRetry})` : ''}
+                {t('web.dashboard.full_perf.retry')}{errorRetry ? ` (${errorRetry})` : ''}
             </Button>
         </div>
     }
@@ -145,14 +147,15 @@ const FullPerfChart = memo(({ threadName, apiData, apiDataAge, width, height, is
 });
 
 function ChartErrorMessage({ error }: { error: Error | string }) {
+    const { t } = useTranslation();
     const errorMessageMaps: Record<string, ReactNode> = {
-        bad_request: 'Chart data loading failed: bad request.',
-        invalid_thread_name: 'Chart data loading failed: invalid thread name.',
-        data_unavailable: 'Chart data loading failed: data not yet available.',
+        bad_request: t('web.dashboard.full_perf.err_bad_request'),
+        invalid_thread_name: t('web.dashboard.full_perf.err_invalid_thread'),
+        data_unavailable: t('web.dashboard.full_perf.err_data_unavailable'),
         not_enough_data: (<p className='text-center'>
-            <strong>There is not enough data to display the chart just yet.</strong><br />
+            <strong>{t('web.dashboard.full_perf.not_enough_data_1')}</strong><br />
             <span className='text-base italic'>
-                The chart requires at least 30 minutes of server runtime data to be available.
+                {t('web.dashboard.full_perf.not_enough_data_2')}
             </span>
         </p>),
     };
@@ -160,13 +163,13 @@ function ChartErrorMessage({ error }: { error: Error | string }) {
     if (typeof error === 'string') {
         return (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-2xl text-muted-foreground">
-                {errorMessageMaps[error] ?? 'Unknown BackendApiError'}
+                {errorMessageMaps[error] ?? t('web.auth_error.unknown_error')}
             </div>
         );
     } else {
         return (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-2xl text-destructive-inline">
-                Error: {error.message ?? 'Unknown Error'}
+                Error: {error.message ?? t('web.auth_error.unknown_error')}
             </div>
         );
     }
@@ -174,6 +177,7 @@ function ChartErrorMessage({ error }: { error: Error | string }) {
 
 
 export default function FullPerfCard() {
+    const { t } = useTranslation();
     const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
     const [selectedThread, setSelectedThread] = useState('svMain');
     const [apiFailReason, setApiFailReason] = useState('');
@@ -227,12 +231,12 @@ export default function FullPerfCard() {
         <div className="w-full h-[28rem] py-3 px-1 glass-card flex flex-col fill-primary">
             <div className="px-4 flex flex-row items-center justify-between pb-2 text-muted-foreground border-b border-white/5 mb-2">
                 <h3 className="tracking-tight text-sm font-semibold text-white line-clamp-1">
-                    Server Performance
+                    {t('web.dashboard.full_perf.title')}
                 </h3>
                 <div className="flex gap-4">
                     <Select defaultValue={selectedThread} onValueChange={setSelectedThread}>
                         <SelectTrigger className="w-32 grow md:grow-0 h-6 px-3 py-1 text-xs bg-white/5 border-white/5 hover:bg-white/10 text-white rounded transition-colors focus:ring-1 focus:ring-primary" >
-                            <SelectValue placeholder="Filter by admin" />
+                            <SelectValue placeholder={t('web.dashboard.perf.filter_placeholder')} />
                         </SelectTrigger>
                         <SelectContent className="px-0">
                             <SelectItem value={'svMain'} className="cursor-pointer">

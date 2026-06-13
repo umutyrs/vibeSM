@@ -17,6 +17,7 @@ export class AuthedAdmin {
     public readonly isTempPassword: boolean;
     public readonly profilePicture: string | undefined;
     public readonly csrfToken?: string;
+    public readonly twoFactorEnabled?: boolean;
 
     constructor(vaultAdmin: any, csrfToken?: string) {
         this.name = vaultAdmin.name;
@@ -24,6 +25,7 @@ export class AuthedAdmin {
         this.permissions = vaultAdmin.permissions;
         this.isTempPassword = (typeof vaultAdmin.password_temporary !== 'undefined');
         this.csrfToken = csrfToken;
+        this.twoFactorEnabled = !!vaultAdmin.twoFactorEnabled;
 
         const cachedPfp = vibeCore.cacheStore.get(`admin:picture:${vaultAdmin.name}`);
         this.profilePicture = typeof cachedPfp === 'string' ? cachedPfp : undefined;
@@ -84,6 +86,7 @@ export class AuthedAdmin {
             isTempPassword: this.isTempPassword,
             profilePicture: this.profilePicture,
             csrfToken: this.csrfToken ?? 'not_set',
+            twoFactorEnabled: this.twoFactorEnabled,
         }
     }
 }
@@ -132,9 +135,19 @@ const validCfxreSessAuthSchema = z.object({
 });
 export type CfxreSessAuthType = z.infer<typeof validCfxreSessAuthSchema>;
 
+const valid2faPendingSessAuthSchema = z.object({
+    type: z.literal('2fa_pending'),
+    username: z.string(),
+    csrfToken: z.string(),
+    expiresAt: z.number(),
+    password_hash: z.string(),
+});
+export type TwoFactorPendingSessAuthType = z.infer<typeof valid2faPendingSessAuthSchema>;
+
 const validSessAuthSchema = z.discriminatedUnion('type', [
     validPassSessAuthSchema,
-    validCfxreSessAuthSchema
+    validCfxreSessAuthSchema,
+    valid2faPendingSessAuthSchema
 ]);
 
 
@@ -199,6 +212,8 @@ export const normalAuthLogic = (
                 return failResp(`Cfxre identifier doesn't match for '${sessAuth.username}'.`);
             }
             return successResp(vaultAdmin, sessAuth.csrfToken);
+        } else if (sessAuth.type === '2fa_pending') {
+            return failResp('2FA verification pending');
         } else {
             return failResp('Invalid auth type.');
         }

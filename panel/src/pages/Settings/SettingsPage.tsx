@@ -8,6 +8,9 @@ import { ApiTimeout, useBackendApi } from "@/hooks/fetch";
 import { useOpenConfirmDialog } from "@/hooks/dialogs";
 import { txToast } from "@/components/TxToaster";
 import { useAdminPerms } from "@/hooks/auth";
+import { useAtomValue } from "jotai";
+import { serverNameAtom, selectedServerIdAtom } from "@/hooks/status";
+import { useEffect } from "react";
 import { SYM_RESET_CONFIG, type SettingsCardContext, type SettingsCardInfo, type SettingsCardProps, type SettingsTabInfo } from "./utils";
 import type { GetConfigsResp, PartialTxConfigs, SaveConfigsReq, SaveConfigsResp } from "@shared/otherTypes";
 
@@ -21,6 +24,7 @@ import ConfigCardGeneral from "./tabCards/general";
 import ConfigCardLanguage from "./tabCards/language";
 import ConfigCardWhitelist from "./tabCards/whitelist";
 import ConfigCardTheme from "./tabCards/theme";
+import ConfigCardQueue from "./tabCards/queue";
 import SettingsCardTemplate from "./tabCards/_template";
 import SettingsCardBlank from "./tabCards/_blank";
 import { PageHeader, PageHeaderChangelog } from "@/components/page-header";
@@ -35,6 +39,7 @@ const settingsTabsBase = [
     { name: 'Theme', Component: ConfigCardTheme },
     { name: 'Bans', Component: ConfigCardBans },
     { name: 'Whitelist', Component: ConfigCardWhitelist },
+    { name: 'Queue', Component: ConfigCardQueue },
     { name: 'Discord', Component: ConfigCardDiscord },
     {
         name: 'Game',
@@ -94,6 +99,23 @@ export const settingsTabs: SettingTabsDatum[] = settingsTabsBase.map((tab) => {
 
 
 export default function SettingsPage() {
+    const selectedServerId = useAtomValue(selectedServerIdAtom);
+    const serverName = useAtomValue(serverNameAtom);
+    const [servers, setServers] = useState<any[]>([]);
+    const listApi = useBackendApi({ method: 'GET', path: '/multi-hosting/servers' });
+
+    useEffect(() => {
+        listApi({}).then((data) => {
+            if (Array.isArray(data)) {
+                setServers(data);
+            }
+        }).catch(() => {});
+    }, []);
+
+    const activeServerName = selectedServerId === 'primary'
+        ? serverName
+        : (servers.find(s => s.id === selectedServerId)?.name || serverName);
+
     const [cardPendingSave, setCardPendingSave] = useState<SettingsCardContext | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const openConfirmDialog = useOpenConfirmDialog();
@@ -200,7 +222,7 @@ export default function SettingsPage() {
 
     return (
         <div className="w-full mb-10">
-            <PageHeader title="Settings" icon={<Settings2Icon />}>
+            <PageHeader title={`Settings | ${activeServerName}`} icon={<Settings2Icon />}>
                 <PageHeaderChangelog
                     changelogData={swr?.data?.changelog}
                 />

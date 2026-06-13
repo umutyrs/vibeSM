@@ -5,6 +5,7 @@ import { AdvancedDivider, SettingItem, SettingItemDesc } from '../settingsItems'
 import { useState, useEffect, useMemo, useReducer } from "react";
 import { getConfigEmptyState, getConfigAccessors, SettingsCardProps, getPageConfig, configsReducer, getConfigDiff } from "../utils";
 import SettingsCardShell from "../SettingsCardShell";
+import { useTranslation } from "@/hooks/translator";
 
 
 export const pageConfigs = {
@@ -15,6 +16,7 @@ export const pageConfigs = {
 } as const;
 
 export default function ConfigCardGameMenu({ cardCtx, pageCtx }: SettingsCardProps) {
+    const { t } = useTranslation();
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [states, dispatch] = useReducer(
         configsReducer<typeof pageConfigs>,
@@ -72,38 +74,38 @@ export default function ConfigCardGameMenu({ cardCtx, pageCtx }: SettingsCardPro
             advancedVisible={showAdvanced}
             advancedSetter={setShowAdvanced}
         >
-            <SettingItem label="Game Menu">
+            <SettingItem label={t('web.settings.gamemenu.label')}>
                 <SwitchText
                     id={cfg.menuEnabled.eid}
-                    checkedLabel="Enabled"
-                    uncheckedLabel="Disabled"
+                    checkedLabel={t('web.settings.enabled')}
+                    uncheckedLabel={t('web.settings.disabled')}
                     variant="checkedGreen"
                     checked={states.menuEnabled}
                     onCheckedChange={cfg.menuEnabled.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    When enabled, admins will be able to open the menu by typing <InlineCode>/tx</InlineCode> or using the keybind configured in the FiveM/RedM settings.
+                    {t('web.settings.gamemenu.desc1')}<InlineCode>/tx</InlineCode>{t('web.settings.gamemenu.desc2')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Align Menu Right">
+            <SettingItem label={t('web.settings.gamemenu.align_right_label')}>
                 <SwitchText
                     id={cfg.alignRight.eid}
-                    checkedLabel="Right aligned"
-                    uncheckedLabel="Left aligned"
+                    checkedLabel={t('web.settings.gamemenu.align_right_checked')}
+                    uncheckedLabel={t('web.settings.gamemenu.align_right_unchecked')}
                     checked={states.alignRight}
                     onCheckedChange={cfg.alignRight.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Move menu to the right side of the screen.
+                    {t('web.settings.gamemenu.align_right_desc')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Menu Page Switch Key" htmlFor={cfg.pageKey.eid} required>
+            <SettingItem label={t('web.settings.gamemenu.page_key_label')} htmlFor={cfg.pageKey.eid} required>
                 <Input
                     id={cfg.pageKey.eid}
                     value={states.pageKey}
-                    placeholder='click here and use the key to change'
+                    placeholder={t('web.settings.gamemenu.page_key_placeholder')}
                     onKeyDown={handlePageKey}
                     className="font-mono"
                     readOnly
@@ -111,27 +113,27 @@ export default function ConfigCardGameMenu({ cardCtx, pageCtx }: SettingsCardPro
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    The key used to to switch tabs in the menu. <br />
-                    Click above and press any key to change the configuration. <br />
-                    <strong>Note:</strong> The default is <InlineCode>Tab</InlineCode>, and you cannot use <InlineCode>Escape</InlineCode> or <InlineCode>Backspace</InlineCode>.
+                    {t('web.settings.gamemenu.page_key_desc1')} <br />
+                    {t('web.settings.gamemenu.page_key_desc2')} <br />
+                    <strong>{t('web.settings.fxserver.restart_schedule_desc2')}</strong>{t('web.settings.gamemenu.page_key_desc4')}<InlineCode>Tab</InlineCode>{t('web.settings.gamemenu.page_key_desc5')}<InlineCode>Escape</InlineCode>{t('web.settings.gamemenu.page_key_desc6')}<InlineCode>Backspace</InlineCode>.
                 </SettingItemDesc>
             </SettingItem>
 
             {showAdvanced && <AdvancedDivider />}
 
-            <SettingItem label="Player Mode Change Effect" showIf={showAdvanced}>
+            <SettingItem label={t('web.settings.gamemenu.effect_label')} showIf={showAdvanced}>
                 <SwitchText
                     id={cfg.playerModePtfx.eid}
-                    checkedLabel="Enabled"
-                    uncheckedLabel="Disabled"
+                    checkedLabel={t('web.settings.enabled')}
+                    uncheckedLabel={t('web.settings.disabled')}
                     variant="checkedGreen"
                     checked={states.playerModePtfx}
                     onCheckedChange={cfg.playerModePtfx.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Play a particle effect and sound when an admin uses NoClip, God Mode, etc. <br />
-                    <strong className="text-warning-inline">Warning:</strong> This options help prevent admin abuse during PvP by making it visible/audible to all players that an admin is using a special mode. We recommend keeping it enabled.
+                    {t('web.settings.gamemenu.effect_desc1')} <br />
+                    <strong>{t('web.settings.fxserver.timezone_warn1')}</strong> {t('web.settings.gamemenu.effect_desc3')}
                 </SettingItemDesc>
             </SettingItem>
         </SettingsCardShell>

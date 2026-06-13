@@ -7,6 +7,7 @@ import { useAdminPerms } from '@/hooks/auth';
 import { useLiveConsoleHistory } from '@/pages/LiveConsole/liveConsoleHooks';
 import { useAtomValue } from 'jotai';
 import { fxRunnerStateAtom } from '@/hooks/status';
+import { useTranslation } from '@/hooks/translator';
 
 
 type ConsoleFooterButtonProps = {
@@ -47,6 +48,7 @@ type LiveConsoleFooterProps = {
 }
 
 export default function LiveConsoleFooter(props: LiveConsoleFooterProps) {
+    const { t } = useTranslation();
     const { history, appendHistory } = useLiveConsoleHistory();
     const [histIndex, setHistIndex] = useState(-1);
     const savedInput = useRef('');
@@ -116,11 +118,11 @@ export default function LiveConsoleFooter(props: LiveConsoleFooterProps) {
 
     let inputError: string | undefined;
     if (!hasWritePerm) {
-        inputError = 'You do not have permission to write to the console.';
+        inputError = t('web.liveconsole.footer.err_no_perm');
     } else if (!fxRunnerState.isChildAlive) {
-        inputError = 'The server is not running.';
+        inputError = t('web.liveconsole.footer.err_not_running');
     } else if (!props.isConnected) {
-        inputError = 'Socket connection lost.';
+        inputError = t('web.liveconsole.footer.err_lost_connection');
     }
 
     return (
@@ -146,7 +148,7 @@ export default function LiveConsoleFooter(props: LiveConsoleFooterProps) {
                         "w-full",
                         !!inputError && 'placeholder:text-destructive placeholder:opacity-100'
                     )}
-                    placeholder={inputError ?? "Type a command..."}
+                    placeholder={inputError ?? t('web.liveconsole.footer.placeholder')}
                     type="text"
                     disabled={!!inputError}
                     onKeyDown={handleInputKeyDown}
@@ -158,24 +160,24 @@ export default function LiveConsoleFooter(props: LiveConsoleFooterProps) {
             <div className="flex flex-row justify-evenly gap-3 2xl:gap-1 select-none">
                 <ConsoleFooterButton
                     icon={BookMarkedIcon}
-                    title="Saved"
+                    title={t('web.liveconsole.footer.saved')}
                     onClick={props.toggleSaveSheet}
                 />
                 <ConsoleFooterButton
                     icon={SearchIcon}
-                    title="Search"
+                    title={t('web.liveconsole.footer.search')}
                     disabled={!props.isConnected}
                     onClick={props.toggleSearchBar}
                 />
                 <ConsoleFooterButton
                     icon={Trash2Icon}
-                    title="Clear"
+                    title={t('web.liveconsole.footer.clear')}
                     disabled={!props.isConnected}
                     onClick={props.consoleClear}
                 />
                 <ConsoleFooterButton
                     icon={FileDownIcon}
-                    title="Download"
+                    title={t('web.liveconsole.footer.download')}
                     disabled={!props.isConnected}
                     onClick={() => {
                         openExternalLink('/fxserver/downloadLog');

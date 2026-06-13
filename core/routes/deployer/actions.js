@@ -233,13 +233,26 @@ async function handleSaveConfig(ctx) {
         onesync = vibeManager.deployer.recipe.onesync;
     }
     try {
-        vibeCore.configStore.saveConfigs({
+        const { vibeConfigStoreContext } = require('@core/vibeSM');
+        const store = vibeConfigStoreContext.getStore();
+        const isMultiHostSetup = (store && store.serverId && store.serverId !== 'primary') || (ctx.query.serverId && ctx.query.serverId !== 'primary');
+        const activeConfigStore = (store && store.configStore) ? store.configStore : vibeCore.configStore;
+
+        activeConfigStore.saveConfigs({
             server: {
                 dataPath: slash(path.normalize(vibeManager.deployer.deployPath)),
                 cfgPath: 'server.cfg',
                 onesync,
             }
         }, ctx.admin.name);
+
+        ctx.admin.logAction('Completed and committed server deploy.');
+
+        if (isMultiHostSetup) {
+            vibeManager.deployer = null;
+            vibeCore.webServer.webSocket.pushRefresh('status');
+            return ctx.send({ success: true });
+        }
     } catch (error) {
         console.warn(`[${ctx.admin.name}] Error changing fxserver settings via deployer.`);
         console.verbose.dir(error);
@@ -249,8 +262,6 @@ async function handleSaveConfig(ctx) {
             message: `**Error saving the configuration file:** ${error.message}`
         });
     }
-
-    ctx.admin.logAction('Completed and committed server deploy.');
 
     //If running (for some reason), kill it first 
     if (!vibeCore.fxRunner.isIdle) {

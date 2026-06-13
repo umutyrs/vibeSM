@@ -65,8 +65,12 @@ export default async function SetupPost(ctx) {
         });
     }
 
+    const { vibeConfigStoreContext } = require('@core/vibeSM');
+    const store = vibeConfigStoreContext.getStore();
+    const isMultiHostSetup = (store && store.serverId && store.serverId !== 'primary') || (ctx.query.serverId && ctx.query.serverId !== 'primary');
+
     //Ensure the correct state for the setup page
-    if (vibeManager.configState !== TxConfigState.Setup) {
+    if (!isMultiHostSetup && vibeManager.configState !== TxConfigState.Setup) {
         return ctx.send({
             success: false,
             refresh: true,
@@ -278,7 +282,8 @@ async function handleSaveLocal(ctx) {
 
     //Preparing & saving config
     try {
-        vibeCore.configStore.saveConfigs({
+        const activeConfigStore = (store && store.configStore) ? store.configStore : vibeCore.configStore;
+        activeConfigStore.saveConfigs({
             general: {
                 serverName: cfg.name,
             },
@@ -302,6 +307,10 @@ async function handleSaveLocal(ctx) {
 
     //Logging
     ctx.admin.logAction('Changing global/fxserver settings via setup stepper.');
+
+    if (isMultiHostSetup) {
+        return ctx.send({success: true});
+    }
 
     //If running (for some reason), kill it first 
     if (!vibeCore.fxRunner.isIdle) {
@@ -355,7 +364,10 @@ async function handleSaveDeployerImport(ctx) {
 
     //Preparing & saving config
     try {
-        vibeCore.configStore.saveConfigs({
+        const { vibeConfigStoreContext } = require('@core/vibeSM');
+        const store = vibeConfigStoreContext.getStore();
+        const activeConfigStore = (store && store.configStore) ? store.configStore : vibeCore.configStore;
+        activeConfigStore.saveConfigs({
             general: { serverName },
         }, ctx.admin.name);
     } catch (error) {
@@ -400,7 +412,10 @@ async function handleSaveDeployerCustom(ctx) {
 
     //Preparing & saving config
     try {
-        vibeCore.configStore.saveConfigs({
+        const { vibeConfigStoreContext } = require('@core/vibeSM');
+        const store = vibeConfigStoreContext.getStore();
+        const activeConfigStore = (store && store.configStore) ? store.configStore : vibeCore.configStore;
+        activeConfigStore.saveConfigs({
             general: { serverName },
         }, ctx.admin.name);
     } catch (error) {

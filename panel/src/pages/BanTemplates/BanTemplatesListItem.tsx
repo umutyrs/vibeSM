@@ -1,7 +1,7 @@
-import { banDurationToString, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { BanDurationType } from "@shared/otherTypes";
 import { Settings2Icon, XIcon } from "lucide-react";
-
+import { useTranslation } from "@/hooks/translator";
 
 type BanTemplatesListItemProps = {
     id: string;
@@ -13,6 +13,14 @@ type BanTemplatesListItemProps = {
 }
 
 export default function BanTemplatesListItem({ id, reason, duration, onEdit, onRemove, disabled }: BanTemplatesListItemProps) {
+    const { t } = useTranslation();
+
+    const getDurationLabel = (duration: BanDurationType) => {
+        if (duration === 'permanent') return t('web.ban_templates.duration_permanent');
+        if (typeof duration === 'string') return duration;
+        return t(`web.ban_templates.unit_${duration.unit}`, { smart_count: duration.value });
+    };
+
     return (<>
         <div className="grow sm:flex items-center justify-items-start gap-2">
             <span className="line-clamp-5 md:line-clamp-3">
@@ -24,7 +32,7 @@ export default function BanTemplatesListItem({ id, reason, duration, onEdit, onR
                     ? 'border-destructive bg-destructive-hint text-destructive'
                     : 'border-primary text-primary opacity-85'
             )}>
-                {banDurationToString(duration)}
+                {getDurationLabel(duration)}
             </div>
         </div>
         <div className="flex gap-2">

@@ -18,6 +18,7 @@ import { generateStatusMessage } from '@modules/DiscordBot/commands/status';
 import { getSchemaChainError } from '@modules/ConfigStore/schema/utils';
 import { confx } from '@modules/ConfigStore/utils';
 import { SYM_RESET_CONFIG } from '@lib/symbols';
+import { discordBotInstances, getServerContextStore } from '../multiHosting';
 const console = consoleFactory(modulename);
 
 
@@ -38,7 +39,8 @@ type CardHandlerSuccessResp = {
 }
 type CardHandler = (
     inputConfig: PartialTxConfigsToSave,
-    sendTypedResp: SendTypedResp
+    sendTypedResp: SendTypedResp,
+    isPrimaryServer?: boolean
 ) => Promise<CardHandlerSuccessResp | void>;
 
 //Known cards
@@ -50,6 +52,7 @@ const cardNamesMap = {
     discord: 'Discord',
     'game-menu': 'Game Menu',
     'game-notifications': 'Game Notifications',
+    queue: 'Queue',
 } as const;
 const validCardIds = Object.keys(cardNamesMap) as [keyof typeof cardNamesMap];
 
@@ -97,6 +100,9 @@ export default async function SaveSettingsConfigs(ctx: AuthedCtx) {
     const { resetKeys, changes: inputConfig } = bodySchemaRes.data;
     const cardName = cardNamesMap[ctx.params.card as keyof typeof cardNamesMap] ?? 'UNKNOWN';
 
+    const serverId = ctx.headers['x-vibesm-server-id'] || ctx.query.serverId;
+    const isPrimaryServer = !serverId || serverId === 'primary';
+
     //Delegate to the specific card handlers - if required
     let handlerResp: CardHandlerSuccessResp | void = { processedConfig: inputConfig };
     try {
@@ -105,7 +111,7 @@ export default async function SaveSettingsConfigs(ctx: AuthedCtx) {
         } else if (cardId === 'fxserver') {
             handlerResp = await handleFxserverCard(inputConfig, sendTypedResp);
         } else if (cardId === 'discord') {
-            handlerResp = await handleDiscordCard(inputConfig, sendTypedResp);
+            handlerResp = await handleDiscordCard(inputConfig, sendTypedResp, isPrimaryServer);
         }
     } catch (error) {
         return sendTypedResp({
@@ -136,16 +142,33 @@ export default async function SaveSettingsConfigs(ctx: AuthedCtx) {
 
     //Save the changes
     try {
-        const changes = vibeCore.configStore.saveConfigs(configChanges, ctx.admin.name);
-        if (changes.hasMatch(['server.dataPath', 'server.cfgPath'])) {
-            vibeCore.webServer.webSocket.pushRefresh('status');
+        let changes;
+        if (!isPrimaryServer && serverId) {
+            // Save to the per-server ConfigStore
+            const serverCtx = await getServerContextStore(serverId as string);
+            if (!serverCtx || !serverCtx.configStore) {
+                return sendTypedResp({
+                    type: 'error',
+                    msg: `Could not find config store for server ${serverId}.`,
+                });
+            }
+            changes = serverCtx.configStore.saveConfigs(configChanges, ctx.admin.name);
+        } else {
+            changes = vibeCore.configStore.saveConfigs(configChanges, ctx.admin.name);
+            if (changes.hasMatch(['server.dataPath', 'server.cfgPath'])) {
+                vibeCore.webServer.webSocket.pushRefresh('status');
+            }
         }
         return sendTypedResp({
             type: 'success',
             msg: `${cardName} Settings saved!`,
             ...(handlerResp?.successToast ?? {}),
-            stored: vibeCore.configStore.getStoredConfig(),
-            changelog: vibeCore.configStore.getChangelog(),
+            stored: isPrimaryServer
+                ? vibeCore.configStore.getStoredConfig()
+                : (await getServerContextStore(serverId as string))?.configStore?.getStoredConfig?.() ?? vibeCore.configStore.getStoredConfig(),
+            changelog: isPrimaryServer
+                ? vibeCore.configStore.getChangelog()
+                : (await getServerContextStore(serverId as string))?.configStore?.getChangelog?.() ?? vibeCore.configStore.getChangelog(),
         });
     } catch (error) {
         const cardName = cardNamesMap[ctx.params.card as keyof typeof cardNamesMap] ?? 'UNKNOWN';
@@ -290,7 +313,7 @@ const handleFxserverCard: CardHandler = async (inputConfig, sendTypedResp) => {
 /**
  * Discord card handler
  */
-const handleDiscordCard: CardHandler = async (inputConfig, sendTypedResp) => {
+const handleDiscordCard: CardHandler = async (inputConfig, sendTypedResp, isPrimaryServer = true) => {
     if (!inputConfig.discordBot) throw new Error(`Unexpected data for the 'discord' card.`);
 
     //Validating embed JSONs
@@ -313,7 +336,16 @@ const handleDiscordCard: CardHandler = async (inputConfig, sendTypedResp) => {
 
     //If bot disabled, kill the bot and don't validate anything
     if (!inputConfig.discordBot?.enabled) {
-        await vibeCore.discordBot.attemptBotReset(false);
+        if (isPrimaryServer) {
+            await vibeCore.discordBot.attemptBotReset(false);
+        } else {
+            // Find and destroy the per-server bot instance
+            for (const [id, bot] of discordBotInstances.entries()) {
+                if (bot) {
+                    try { await bot.attemptBotReset(false); } catch (e) {}
+                }
+            }
+        }
         return { processedConfig: inputConfig };
     }
 
@@ -349,48 +381,54 @@ const handleDiscordCard: CardHandler = async (inputConfig, sendTypedResp) => {
     }
 
     //Restarting discord bot
-    let successMsg;
-    try {
-        successMsg = await vibeCore.discordBot.attemptBotReset({
-            enabled: true,
-            //They have been validated, so this is fine
-            token: inputConfig.discordBot.token as any,
-            guild: inputConfig.discordBot.guild as any,
-            warningsChannel: inputConfig.discordBot.warningsChannel as any,
-        });
-    } catch (error) {
-        const errorCode = (error as any).code;
-        let extraContext = '';
-        if (errorCode === 'DisallowedIntents' || errorCode === 4014) {
-            extraContext = `**The bot requires the \`GUILD_MEMBERS\` intent.**
-            - Go to the [Discord Dev Portal](https://discord.com/developers/applications)
-            - Navigate to \`Bot > Privileged Gateway Intents\`.
-            - Enable the \`GUILD_MEMBERS\` intent.
-            - Press save on the developer portal.
-            - Go to the \`vibeSM > Settings > Discord Bot\` and press save.`;
-        } else if (errorCode === 'CustomNoGuild') {
-            const inviteUrl = ('clientId' in (error as any))
-                ? `https://discord.com/oauth2/authorize?client_id=${(error as any).clientId}&scope=bot&permissions=0`
-                : `https://discordapi.com/permissions.html#0`
-            extraContext = `**This usually mean one of the issues below:**
-            - **Wrong server ID:** read the description of the server ID setting for more information.
-            - **Bot is not in the server:** you need to [INVITE THE BOT](${inviteUrl}) to join the server.
-            - **Wrong bot:** you may be using the token of another discord bot.`;
-        } else if (errorCode === 'DangerousPermission') {
-            extraContext = `You need to remove the permissions listed above to be able to enable this bot.
-            This should be done in the Discord Server role configuration page and not in the Dev Portal.
-            Check every single role that the bot has in the server.
+    let successMsg = 'Settings saved! Please restart the server instance for the changes to take effect.';
+    if (isPrimaryServer) {
+        try {
+            const botResetMsg = await vibeCore.discordBot.attemptBotReset({
+                enabled: true,
+                //They have been validated, so this is fine
+                token: inputConfig.discordBot.token as any,
+                guild: inputConfig.discordBot.guild as any,
+                warningsChannel: inputConfig.discordBot.warningsChannel as any,
+                allowDangerousPermissions: inputConfig.discordBot.allowDangerousPermissions as any,
+            });
+            if (botResetMsg) successMsg = botResetMsg;
+        } catch (error) {
+            const errorCode = (error as any).code;
+            let extraContext = '';
+            if (errorCode === 'DisallowedIntents' || errorCode === 4014) {
+                extraContext = `**The bot requires the \`GUILD_MEMBERS\` intent.**
+                - Go to the [Discord Dev Portal](https://discord.com/developers/applications)
+                - Navigate to \`Bot > Privileged Gateway Intents\`.
+                - Enable the \`GUILD_MEMBERS\` intent.
+                - Press save on the developer portal.
+                - Go to the \`vibeSM > Settings > Discord Bot\` and press save.`;
+            } else if (errorCode === 'CustomNoGuild') {
+                const inviteUrl = ('clientId' in (error as any))
+                    ? `https://discord.com/oauth2/authorize?client_id=${(error as any).clientId}&scope=bot&permissions=0`
+                    : `https://discordapi.com/permissions.html#0`
+                extraContext = `**This usually mean one of the issues below:**
+                - **Wrong server ID:** read the description of the server ID setting for more information.
+                - **Bot is not in the server:** you need to [INVITE THE BOT](${inviteUrl}) to join the server.
+                - **Wrong bot:** you may be using the token of another discord bot.`;
+            } else if (errorCode === 'DangerousPermission') {
+                extraContext = `**If you understand the risks and want to run the bot anyway, please check the "Allow Dangerous Permissions" checkbox in settings.**
 
-            Please keep in mind that:
-            - These permissions are dangerous because if the bot token leaks, an attacker can cause permanent damage to your server.
-            - No bot should have more permissions than strictly needed, especially \`Administrator\`.
-            - You should never have multiple bots using the same token, create a new one for each bot.`;
+                Please keep in mind that:
+                - These permissions are dangerous because if the bot token leaks, an attacker can cause permanent damage to your server.
+                - No bot should have more permissions than strictly needed, especially \`Administrator\`.
+                - You should never have multiple bots using the same token, create a new one for each bot.`;
+            }
+            return sendTypedResp({
+                ...baseError,
+                title: 'Error starting the bot:',
+                msg: `${(error as Error).message}\n${extraContext}`.trim(),
+            });
         }
-        return sendTypedResp({
-            ...baseError,
-            title: 'Error starting the bot:',
-            msg: `${(error as Error).message}\n${extraContext}`.trim(),
-        });
+    } else {
+        // For non-primary servers, restart the per-server bot
+        // The bot will be re-created on next server start with new config
+        successMsg = 'Discord bot settings saved! The bot will use the new settings when the server is restarted.';
     }
 
     return {

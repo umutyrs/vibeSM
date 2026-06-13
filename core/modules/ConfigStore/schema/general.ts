@@ -21,8 +21,16 @@ const language = typeDefinedConfig({
     fixer: SYM_FIXER_DEFAULT,
 });
 
+const twoFactorRequired = typeDefinedConfig({
+    name: 'Require Two-Factor Auth',
+    default: false,
+    validator: z.boolean(),
+    fixer: SYM_FIXER_DEFAULT,
+});
+
 
 export default {
     serverName,
     language,
+    twoFactorRequired,
 } as const;

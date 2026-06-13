@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { AuthError, checkCommonOauthErrors, processFetchError } from "./errors";
 import GenericSpinner from "@/components/GenericSpinner";
 import { fetchWithTimeout } from "@/hooks/fetch";
-
+import { useTranslation } from "@/hooks/translator";
 
 export default function CfxreCallback() {
+    const { t } = useTranslation();
     const hasPendingMutation = useRef(false); //due to strict mode re-rendering
     const { authData, setAuthData } = useAuth();
     const [errorData, setErrorData] = useState<ApiOauthCallbackErrorResp | undefined>(checkCommonOauthErrors);
@@ -30,11 +31,11 @@ export default function CfxreCallback() {
                 setAuthData(data);
             }
         } catch (error) {
-            setErrorData(processFetchError(error));
+            setErrorData(processFetchError(error, t));
         } finally {
             setIsFetching(false);
         }
-    }
+    };
 
     useEffect(() => {
         if (authData || hasPendingMutation.current) return;
@@ -45,12 +46,12 @@ export default function CfxreCallback() {
             return;
         }
         submitCallback();
-    }, []);
+    }, [authData]);
 
     if (errorData) {
         return <AuthError error={errorData} />;
     } else if (isFetching) {
-        return <GenericSpinner msg="Logging in..." />;
+        return <GenericSpinner msg={t('web.auth.login.logging_in')} />;
     } else {
         return <GenericSpinner />;
     }

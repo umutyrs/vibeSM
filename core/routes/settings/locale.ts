@@ -20,13 +20,22 @@ export async function settings_getLocale(ctx: AuthedCtx) {
     const sendTypedResp = (data: GetLocaleResp | { error: string }) => ctx.send(data);
 
     try {
+        const queryTemplate = ctx.query?.template;
         let phrases;
-        try {
-            const raw = await fsp.readFile(vibeCore.translator.customLocalePath, 'utf8');
-            phrases = JSON.parse(raw);
-        } catch (err) {
-            // If file doesn't exist, read English template
-            phrases = vibeCore.translator.getLanguagePhrases('en');
+        if (queryTemplate && typeof queryTemplate === 'string') {
+            try {
+                phrases = vibeCore.translator.getLanguagePhrases(queryTemplate);
+            } catch (err) {
+                phrases = vibeCore.translator.getLanguagePhrases('en');
+            }
+        } else {
+            try {
+                const raw = await fsp.readFile(vibeCore.translator.customLocalePath, 'utf8');
+                phrases = JSON.parse(raw);
+            } catch (err) {
+                // If file doesn't exist, read English template
+                phrases = vibeCore.translator.getLanguagePhrases('en');
+            }
         }
 
         return sendTypedResp({ phrases });

@@ -226,7 +226,9 @@ export default class ServerLogger extends LoggerBase {
 
         } else if (eventData.type === 'LoggerStarted') {
             eventMessage = 'Logger started';
-            vibeCore.metrics.playerDrop.handleServerBootData(eventData.data);
+            vibeCore.metrics.playerDrop.handleServerBootData(eventData.data, this.serverId || 'primary').catch((err) => {
+                console.error(`Error in handleServerBootData: ${err.message}`);
+            });
             if (typeof eventData.data?.gameName === 'string' && eventData.data.gameName.length) {
                 if(eventData.data.gameName === 'gta5'){
                     vibeCore.cacheStore.set('fxsRuntime:gameName', 'fivem');

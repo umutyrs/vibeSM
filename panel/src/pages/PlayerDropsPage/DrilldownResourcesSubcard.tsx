@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { numberToLocaleString } from "@/lib/utils";
 import { PlayerDropsMessage } from "./PlayerDropsGenericSubcards";
+import { useTranslation } from "@/hooks/translator";
 
 type DisplayResourceDatum = {
     label: string;
@@ -12,6 +13,7 @@ type DrilldownResourcesSubcardProps = {
 };
 
 export default function DrilldownResourcesSubcard({ resKicks }: DrilldownResourcesSubcardProps) {
+    const { t } = useTranslation();
     let { totalKicks, resources } = useMemo(() => {
         let totalKicks = 0;
         const resources: Record<string, DisplayResourceDatum> = {};
@@ -29,7 +31,7 @@ export default function DrilldownResourcesSubcard({ resKicks }: DrilldownResourc
     }, [resKicks]);
 
     if (!resources.length) {
-        return <PlayerDropsMessage message="No players kicked by resources within this time window." />;
+        return <PlayerDropsMessage message={t('web.player_drops.resources.no_kicks')} />;
     }
 
     return (

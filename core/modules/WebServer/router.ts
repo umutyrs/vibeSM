@@ -51,6 +51,10 @@ export default () => {
     router.post('/auth/changePassword', apiAuthMw, routes.auth_changePassword);
     router.get('/auth/getIdentifiers', apiAuthMw, routes.auth_getIdentifiers);
     router.post('/auth/changeIdentifiers', apiAuthMw, routes.auth_changeIdentifiers);
+    router.post('/auth/2fa/confirmLogin', authLimiter, routes.auth_confirm2faLogin);
+    router.get('/auth/2fa/setup', apiAuthMw, routes.auth_setup2fa);
+    router.post('/auth/2fa/enable', apiAuthMw, routes.auth_enable2fa);
+    router.post('/auth/2fa/disable', apiAuthMw, routes.auth_disable2fa);
 
     //Admin Manager
     router.post('/adminManager/getModal/:modalType', webAuthMw, routes.adminManager_getModal);
@@ -126,6 +130,11 @@ export default () => {
     router.post('/multi-hosting/servers', apiAuthMw, routes.multiHosting.saveServer);
     router.delete('/multi-hosting/servers/:id', apiAuthMw, routes.multiHosting.deleteServer);
     router.post('/multi-hosting/servers/:id/control', apiAuthMw, routes.multiHosting.controlServer);
+
+    // Public status check (unauthenticated for Discord bot)
+    router.get('/public/status', routes.publicStatus);
+    router.get('/api/community/ads', routes.communityAds);
+
 
 
     //DevDebug routes - no auth

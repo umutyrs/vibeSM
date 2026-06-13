@@ -10,6 +10,7 @@ import { useBackendApi } from '@/hooks/fetch';
 import { HistoryTableActionType, HistoryTableSearchResp, HistoryTableSearchType, HistoryTableSortingType } from '@shared/historyApiTypes';
 import { useOpenActionModal } from '@/hooks/actionModal';
 import { SEARCH_ANY_STRING } from './HistorySearchBox';
+import { useTranslation } from '@/hooks/translator';
 
 
 /**
@@ -21,6 +22,7 @@ type HistoryRowProps = {
 }
 
 function HistoryRow({ action, modalOpener }: HistoryRowProps) {
+    const { t } = useTranslation();
     const openModal = () => {
         modalOpener(action.id);
     }
@@ -75,7 +77,7 @@ function HistoryRow({ action, modalOpener }: HistoryRowProps) {
             <TableCell className='px-4 py-2.5 border-r border-white/5'>
                 <span className='text-ellipsis overflow-hidden line-clamp-1 break-all font-sans font-medium text-white/95'>
                     {action.playerName ? action.playerName : (
-                        <span className='text-white/30 italic'>unknown</span>
+                        <span className='text-white/30 italic'>{t('web.history.row_unknown')}</span>
                     )}
                 </span>
             </TableCell>
@@ -111,22 +113,23 @@ type LastRowProps = {
 }
 
 function LastRow({ playersCount, hasReachedEnd, isFetching, loadError, retryFetch }: LastRowProps) {
+    const { t } = useTranslation();
     let content: React.ReactNode;
     if (isFetching) {
         content = <Loader2Icon className="mx-auto animate-spin" />
     } else if (loadError) {
         content = <>
-            <span className='text-destructive-inline'>Error: {loadError}</span><br />
-            <button className='underline' onClick={() => retryFetch()}>Try again?</button>
+            <span className='text-destructive-inline'>{t('web.history.last_row_error', { error: loadError })}</span><br />
+            <button className='underline' onClick={() => retryFetch()}>{t('web.history.last_row_try_again')}</button>
         </>
     } else if (hasReachedEnd) {
         content = <span className='font-bold text-muted-foreground'>
-            {playersCount ? 'You have reached the end of the list.' : 'No actions found.'}
+            {playersCount ? t('web.history.reached_end') : t('web.history.no_actions')}
         </span>
     } else {
         content = <span>
-            You've found the end of the rainbow, but there's no pot of gold here. <br />
-            <i>(this is a bug, please report it in <TxAnchor href="https://discord.gg/vibeSM" target="_blank" rel="noopener noreferrer">discord.gg/vibeSM</TxAnchor>)</i>
+            {t('web.history.bug_report_1')} <br />
+            <i>{t('web.history.bug_report_2_prefix')}<TxAnchor href="https://discord.gg/vibeSM" target="_blank" rel="noopener noreferrer">discord.gg/vibeSM</TxAnchor>{t('web.history.bug_report_2_suffix')}</i>
         </span>
     }
 
@@ -199,6 +202,7 @@ type HistoryTableProps = {
 }
 
 export default function HistoryTable({ search, filterbyType, filterbyAdmin }: HistoryTableProps) {
+    const { t } = useTranslation();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [history, setHistory] = useState<HistoryTableActionType[]>([]);
     const [hasReachedEnd, setHasReachedEnd] = useState(false);
@@ -249,9 +253,9 @@ export default function HistoryTable({ search, filterbyType, filterbyAdmin }: Hi
 
             //Dealing with errors
             if (resp === undefined) {
-                return handleError(`Request failed.`);
+                return handleError(t('web.history.err_req_failed'));
             } else if ('error' in resp) {
-                return handleError(`Request failed: ${resp.error}`);
+                return handleError(t('web.history.err_req_failed_with', { error: resp.error }));
             }
 
             //Setting the states
@@ -264,7 +268,7 @@ export default function HistoryTable({ search, filterbyType, filterbyAdmin }: Hi
                 setHistory([]);
             }
         } catch (error) {
-            handleError(`Failed to fetch more data: ${(error as Error).message}`);
+            handleError(t('web.history.err_fetch_failed', { error: (error as Error).message }));
         } finally {
             setIsFetching(false);
             setIsResetting(false);
@@ -322,12 +326,12 @@ export default function HistoryTable({ search, filterbyType, filterbyAdmin }: Hi
                 <table className='w-full caption-bottom text-sm select-none'>
                     <TableHeader>
                         <tr className='sticky top-0 z-10 bg-card/85 backdrop-blur-md text-foreground text-[10px] border-b border-white/10 transition-colors uppercase tracking-wider'>
-                            <NonSortableTableHeader label='Action' />
-                            <NonSortableTableHeader label='Player' />
-                            <NonSortableTableHeader label='Reason' />
-                            <NonSortableTableHeader label='Author' />
+                            <NonSortableTableHeader label={t('web.history.header_action')} />
+                            <NonSortableTableHeader label={t('web.history.header_player')} />
+                            <NonSortableTableHeader label={t('web.history.header_reason')} />
+                            <NonSortableTableHeader label={t('web.history.header_author')} />
                             <SortableTableHeader
-                                label='Date Time'
+                                label={t('web.history.header_date_time')}
                                 sortKey='timestamp'
                                 sortingState={sorting}
                                 setSorting={setSorting}

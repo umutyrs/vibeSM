@@ -666,6 +666,94 @@ export default class AdminStore {
 
 
     /**
+     * Sets a pending 2FA secret on the admin object.
+     * @param {string} name 
+     * @param {string} secret 
+     */
+    async setAdmin2FAPendingSecret(name, secret) {
+        if (this.admins == false) throw new Error('Admins not set');
+        let username = name.toLowerCase();
+        let adminIndex = this.admins.findIndex((user) => username === user.name.toLowerCase());
+        if (adminIndex == -1) throw new Error('Admin not found');
+        
+        this.admins[adminIndex].twoFactorPendingSecret = secret;
+        try {
+            await this.writeAdminsFile();
+            return true;
+        } catch (error) {
+            throw new Error(`Failed to save admins.json with error: ${error.message}`);
+        }
+    }
+
+    /**
+     * Enables 2FA for the admin using their pending secret.
+     * @param {string} name 
+     */
+    async enableAdmin2FA(name) {
+        if (this.admins == false) throw new Error('Admins not set');
+        let username = name.toLowerCase();
+        let adminIndex = this.admins.findIndex((user) => username === user.name.toLowerCase());
+        if (adminIndex == -1) throw new Error('Admin not found');
+
+        const pendingSecret = this.admins[adminIndex].twoFactorPendingSecret;
+        if (!pendingSecret) throw new Error('No pending 2FA secret setup');
+
+        this.admins[adminIndex].twoFactorSecret = pendingSecret;
+        this.admins[adminIndex].twoFactorEnabled = true;
+        delete this.admins[adminIndex].twoFactorPendingSecret;
+
+        try {
+            await this.writeAdminsFile();
+            return true;
+        } catch (error) {
+            throw new Error(`Failed to save admins.json with error: ${error.message}`);
+        }
+    }
+
+    /**
+     * Disables 2FA for the admin.
+     * @param {string} name 
+     */
+    async disableAdmin2FA(name) {
+        if (this.admins == false) throw new Error('Admins not set');
+        let username = name.toLowerCase();
+        let adminIndex = this.admins.findIndex((user) => username === user.name.toLowerCase());
+        if (adminIndex == -1) throw new Error('Admin not found');
+
+        this.admins[adminIndex].twoFactorEnabled = false;
+        delete this.admins[adminIndex].twoFactorSecret;
+        delete this.admins[adminIndex].twoFactorPendingSecret;
+
+        try {
+            await this.writeAdminsFile();
+            return true;
+        } catch (error) {
+            throw new Error(`Failed to save admins.json with error: ${error.message}`);
+        }
+    }
+
+    /**
+     * Saves the last login IP for the admin.
+     * @param {string} name 
+     * @param {string} ip 
+     */
+    async saveAdminLastLoginIp(name, ip) {
+        if (this.admins == false) throw new Error('Admins not set');
+        let username = name.toLowerCase();
+        let adminIndex = this.admins.findIndex((user) => username === user.name.toLowerCase());
+        if (adminIndex == -1) throw new Error('Admin not found');
+
+        this.admins[adminIndex].lastLoginIp = ip;
+        try {
+            await this.writeAdminsFile();
+            return true;
+        } catch (error) {
+            throw new Error(`Failed to save admins.json with error: ${error.message}`);
+        }
+    }
+
+
+    /**
      * Returns the public name to display for that particular purpose
      * TODO: maybe use enums for the purpose
      */

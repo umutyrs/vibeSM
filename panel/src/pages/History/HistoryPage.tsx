@@ -11,6 +11,7 @@ import HistoryTable from './HistoryTable';
 import { HistoryStatsResp, HistoryTableSearchType } from '@shared/historyApiTypes';
 import { useBackendApi } from '@/hooks/fetch';
 import { createRandomHslColor } from '@/lib/utils';
+import { useTranslation } from '@/hooks/translator';
 
 
 //Memoized components
@@ -65,6 +66,7 @@ const getInitialState = () => {
 
 
 export default function HistoryPage() {
+    const { t } = useTranslation();
     const [calloutData, setCalloutData] = useState<HistoryStatsResp | undefined>(undefined);
     const [searchBoxReturn, setSearchBoxReturn] = useState<HistorySearchBoxReturnStateType | undefined>(undefined);
     const statsApi = useBackendApi<HistoryStatsResp>({
@@ -97,29 +99,29 @@ export default function HistoryPage() {
         const hasCalloutData = calloutData && !('error' in calloutData);
         return [
             {
-                label: 'Total Warns',
+                label: t('web.history.title_total_warns'),
                 value: hasCalloutData ? calloutData.totalWarns : false,
                 icon: <AlertTriangleIcon />,
             },
             {
-                label: 'New Warns Last 7d',
+                label: t('web.history.title_new_warns_7d'),
                 value: hasCalloutData ? calloutData.warnsLast7d : false,
                 icon: <AlertTriangleIcon />,
                 prefix: '+'
             },
             {
-                label: 'Total Bans',
+                label: t('web.history.title_total_bans'),
                 value: hasCalloutData ? calloutData.totalBans : false,
                 icon: <GavelIcon />,
             },
             {
-                label: 'New Bans Last 7d',
+                label: t('web.history.title_new_bans_7d'),
                 value: hasCalloutData ? calloutData.bansLast7d : false,
                 icon: <GavelIcon />,
                 prefix: '+'
             }
         ] satisfies PageCalloutProps[];
-    }, [calloutData]);
+    }, [calloutData, t]);
 
     return (<div
         className='flex flex-col min-w-96 w-full h-contentvh'

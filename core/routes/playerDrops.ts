@@ -55,8 +55,11 @@ export default async function playerDrops(ctx: AuthedCtx) {
     const { detailedWindow, detailedDaysAgo } = schemaRes.data;
     const lookupTs = Date.now();
 
+    const { vibeConfigStoreContext } = require('@core/vibeSM');
+    const serverId = vibeConfigStoreContext.getStore()?.serverId || 'primary';
+
     //Get the summary for the last 2 weeks
-    const summary = vibeCore.metrics.playerDrop.getRecentSummary(SUMMARY_DEFAULT_HOURS);
+    const summary = await vibeCore.metrics.playerDrop.getRecentSummary(SUMMARY_DEFAULT_HOURS, serverId);
 
     //Get the detailed data for the requested window or 1d by default
     let detailedWindowStart, detailedWindowEnd;
@@ -86,7 +89,7 @@ export default async function playerDrops(ctx: AuthedCtx) {
         detailedWindowStart = startDate.setHours(startDate.getHours() - (windowHours), 0, 0, 0);
         detailedWindowEnd = lookupTs;
     }
-    const detailed = vibeCore.metrics.playerDrop.getWindowData(detailedWindowStart, detailedWindowEnd);
+    const detailed = await vibeCore.metrics.playerDrop.getWindowData(detailedWindowStart, detailedWindowEnd, serverId);
 
     return sendTypedResp({
         ts: lookupTs,

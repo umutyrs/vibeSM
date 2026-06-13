@@ -24,6 +24,7 @@ const restructureOldConfig = (old: any) => {
         general: { //NOTE:renamed
             serverName: old?.global?.serverName,
             language: old?.global?.language,
+            twoFactorRequired: old?.global?.twoFactorRequired,
         },
         webServer: {
             disableNuiSourceCheck: old?.webServer?.disableNuiSourceCheck,

@@ -140,7 +140,19 @@ export default class ConfigStore /*does not extend TxModuleBase*/ {
     * Mirrors the #config object to the public deep frozen config object
     */
     private updatePublicConfig() {
-        (globalThis as any).vibeConfig = deepFreeze(cloneDeep(this.activeConfigs));
+        const normConfigPath = path.resolve(this.configFilePath).replace(/\\/g, '/').toLowerCase();
+        const normPrimaryPath = path.resolve(`${vibeEnv.profilePath}/config.json`).replace(/\\/g, '/').toLowerCase();
+        if (normConfigPath !== normPrimaryPath) {
+            try {
+                const { vibeConfigStoreContext } = require('@core/vibeSM');
+                const store = vibeConfigStoreContext.getStore();
+                if (store) {
+                    store.vibeConfig = deepFreeze(cloneDeep(this.activeConfigs));
+                }
+            } catch (e) {}
+        } else {
+            (globalThis as any).vibeConfig = deepFreeze(cloneDeep(this.activeConfigs));
+        }
     }
 
 

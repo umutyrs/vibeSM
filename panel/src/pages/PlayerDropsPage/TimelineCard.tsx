@@ -7,6 +7,7 @@ import { PlayerDropsLoadingSpinner } from "./PlayerDropsGenericSubcards";
 import TimelineDropsChart, { TimelineDropsChartData } from "./TimelineDropsChart";
 import { processDropsSummary } from "./chartingUtils";
 import { DisplayLodType, DrilldownRangeSelectionType } from "./PlayerDropsPage";
+import { useTranslation } from "@/hooks/translator";
 
 
 type PlayerDropsTimelineChartsProps = {
@@ -28,6 +29,7 @@ const TimelineCard = memo(({
     displayLod,
     setDisplayLod
 }: PlayerDropsTimelineChartsProps) => {
+    const { t } = useTranslation();
     const [expectedDropsChartSize, setExpectedDropsChartSize] = useState({ width: 0, height: 0 });
     const [unexpectedDropsChartSize, setUnexpectedDropsChartSize] = useState({ width: 0, height: 0 });
 
@@ -70,20 +72,20 @@ const TimelineCard = memo(({
             <div className="flex flex-row items-center justify-between px-1 sm:px-4 border-b rounded-t-[inherit] bg-secondary/35">
                 <div className="flex items-center py-2 space-x-2">
                     <div className='hidden xs:block'><DoorOpenIcon className="size-4" /></div>
-                    <h2 className="font-mono text-sm">Expected Player Drops</h2>
+                    <h2 className="font-mono text-sm">{t('web.player_drops.expected_drops')}</h2>
                 </div>
                 <Select defaultValue={displayLod} onValueChange={setDisplayLod}>
                     <SelectTrigger
                         className="w-32 h-6 px-3 py-1 text-sm"
                     >
-                        <SelectValue placeholder="Filter by admin" />
+                        <SelectValue placeholder={t('web.player_drops.filter_placeholder')} />
                     </SelectTrigger>
                     <SelectContent className="px-0">
                         <SelectItem value={'day'} className="cursor-pointer">
-                            Days
+                            {t('web.player_drops.days')}
                         </SelectItem>
                         <SelectItem value={'hour'} className="cursor-pointer">
-                            Hours
+                            {t('web.player_drops.hours')}
                         </SelectItem>
                     </SelectContent>
                 </Select>
@@ -108,7 +110,7 @@ const TimelineCard = memo(({
             <div className="flex flex-row items-center justify-between px-1 sm:px-4 border-t border-b bg-secondary/35">
                 <div className="flex items-center py-2 gap-2">
                     <div className='hidden xs:block'><DoorOpenIcon className="size-4" /></div>
-                    <h2 className="font-mono text-sm">Unexpected Player Drops</h2>
+                    <h2 className="font-mono text-sm">{t('web.player_drops.unexpected_drops')}</h2>
                 </div>
             </div>
             <div className="h-52 max-h-52">

@@ -15,7 +15,7 @@
     "license:report": "npx license-report > ../.reports/license/core.html"
   },
   "keywords": [],
-  "author": "André Tabarra",
+  "author": "André Tabarra and umutyrs",
   "license": "MIT",
   "dependencies": {
     "@koa/cors": "^5.0.0",
@@ -23,6 +23,7 @@
     "boxen": "^7.1.1",
     "bytes": "^3.1.2",
     "cookie": "^0.7.0",
+    "dotenv": "^16.4.5",
     "d3-array": "^3.2.4",
     "dateformat": "^5.0.3",
     "discord.js": "14.11.0",

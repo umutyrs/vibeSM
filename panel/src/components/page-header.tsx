@@ -128,7 +128,7 @@ type PageHeaderProps = {
     children?: React.ReactNode;
 }
 export function PageHeader(props: PageHeaderProps) {
-    const categoryEyebrow = props.parentName ? props.parentName.toUpperCase() : "VIBESM MANAGEMENT";
+    const categoryEyebrow = props.parentName ? props.parentName.toUpperCase() : "vibeSM Management";
     return (
         <header className='border-b border-border mb-4 pb-2'>
             <div className='flex max-xs:flex-col gap-2 xs:gap-4 max-xs:items-start justify-between items-center px-4 py-2'>

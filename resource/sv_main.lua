@@ -439,6 +439,13 @@ local function handleConnections(name, setKickReason, d)
                             if respObj.allow == true then
                                 d.done()
                                 isDone = true
+                            elseif respObj.retry == true then
+                                if respObj.adaptiveCard then
+                                    d.presentCard(json.encode(respObj.adaptiveCard))
+                                else
+                                    local reason = respObj.reason or "\n[vibeSM] in queue"
+                                    d.update(reason)
+                                end
                             else
                                 local reason = respObj.reason or "\n[vibeSM] no reason provided"
                                 d.done("\n"..reason)

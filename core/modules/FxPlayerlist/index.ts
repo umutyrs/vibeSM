@@ -54,6 +54,13 @@ export default class FxPlayerlist {
         return this.#getPlayerlist().filter(p => p && p.isConnected).length;
     }
 
+    /**
+     * Number of online/connected players for a specific mutex.
+     */
+    getOnlineCount(mutex?: string) {
+        return this.#getPlayerlist(mutex).filter(p => p && p.isConnected).length;
+    }
+
 
     /**
      * Number of players that joined/left in the last hour.
@@ -223,7 +230,7 @@ export default class FxPlayerlist {
                 if (!(plist[payload.id] instanceof ServerPlayer)) throw new Error(`player id not found`);
                 plist[payload.id]!.disconnect();
                 this.joinLeaveLog.push([currTs, false]);
-                const reasonCategory = vibeCore.metrics.playerDrop.handlePlayerDrop(payload);
+                const reasonCategory = await vibeCore.metrics.playerDrop.handlePlayerDrop(payload, serverId);
                 if (reasonCategory !== false) {
                     vibeCore.logger.server.write([{
                         type: 'playerDropped',

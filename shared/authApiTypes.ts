@@ -14,6 +14,7 @@ export type ReactAuthDataType = {
     isTempPassword: boolean;
     profilePicture?: string;
     csrfToken?: string;
+    twoFactorEnabled?: boolean;
 }
 
 export type ApiSelfResp = ApiAuthErrorResp | ReactAuthDataType;

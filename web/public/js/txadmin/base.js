@@ -245,3 +245,8 @@ const startHoldingNotify = (awaitingMessage) => {
 
     return {notify, progressTimerId};
 } 
+
+// Legacy compatibility aliases
+window.txAdminConfirm = vibeSMConfirm;
+window.txAdminAlert = vibeSMAlert;
+window.txAdminPrompt = vibeSMPrompt; 

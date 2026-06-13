@@ -2,6 +2,8 @@
 import { vibeEnv, vibeHostConfig } from './globalData';
 import consoleFactory, { setTTYTitle } from '@lib/console';
 
+
+
 //Can be imported after
 import fs from 'node:fs';
 import checkPreRelease from './boot/checkPreRelease';

@@ -52,10 +52,10 @@ export const getMutableConvars = (isCmdLine = false) => {
         // ['setr', 'verbose', console.isVerbose],
     ];
 
-    if (appearAllowlisted && vibeConfig.whitelist.rejectionMessage) {
+    if (vibeConfig.whitelist.allowlistInstructions) {
         const instructions = isCmdLine
-            ? vibeConfig.whitelist.rejectionMessage.replaceAll('\n', '\\\n')
-            : vibeConfig.whitelist.rejectionMessage;
+            ? vibeConfig.whitelist.allowlistInstructions.replaceAll('\n', '\\\n')
+            : vibeConfig.whitelist.allowlistInstructions;
         convars.push(['sets', 'sv_allowlistInstructions', instructions]);
     }
 
@@ -79,6 +79,7 @@ export const mutableConvarConfigDependencies = [
     'banlist.enabled',
     'whitelist.mode',
     'whitelist.rejectionMessage',
+    'whitelist.allowlistInstructions',
 ];
 
 

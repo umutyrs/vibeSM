@@ -13,6 +13,7 @@ export const runningProcesses = new Map<string, ChildProcess>();
 export const loggerInstances = new Map<string, FXServerLogger>();
 export const gameLoggerInstances = new Map<string, ServerLogger>();
 const databaseInstances = new Map<string, any>();
+export const discordBotInstances = new Map<string, any>();
 const modulename = 'WebServer:MultiHosting';
 
 
@@ -140,6 +141,26 @@ export async function getServerContextStore(serverId: string) {
                 const configStore = new ConfigStore(customConfigPath);
                 configStoreInstances.set(serverId, configStore);
                 
+                configStore.registerUpdateCallback(
+                    'MultiHostingSync',
+                    ['server.dataPath', 'server.cfgPath', 'general.serverName'],
+                    async (updatedConfigs) => {
+                        try {
+                            const servers = await readServers();
+                            const srvIndex = servers.findIndex(s => s.id === serverId);
+                            if (srvIndex !== -1) {
+                                const activeConfigs = configStore.getStoredConfig();
+                                servers[srvIndex].name = activeConfigs.general?.serverName || servers[srvIndex].name;
+                                servers[srvIndex].dataPath = activeConfigs.server?.dataPath || servers[srvIndex].dataPath;
+                                servers[srvIndex].cfgPath = activeConfigs.server?.cfgPath || servers[srvIndex].cfgPath;
+                                await writeServers(servers);
+                            }
+                        } catch (e) {
+                            console.error(`Failed to sync config updates to servers.json for server ${server.name}: ${(e as any).message}`);
+                        }
+                    }
+                );
+
                 // Ensure the dataPath and cfgPath inside the newly loaded config are overridden to the multi-hosted server's actual values
                 const toSave = {
                     server: {
@@ -203,12 +224,12 @@ export async function saveServer(ctx: AuthedCtx) {
             msg: 'You do not have permission to execute this action.'
         });
     }
-    const { id, name, port, dataPath, cfgPath } = ctx.request.body as Partial<ServerConfig>;
+    const { id, name, port, dataPath, cfgPath, isCreatingNew } = ctx.request.body as Partial<ServerConfig> & { isCreatingNew?: boolean };
     
-    if (!name || !port || !dataPath || !cfgPath) {
+    if (!name || !port || !dataPath || (!isCreatingNew && !cfgPath)) {
         return ctx.send<ApiToastResp>({
             type: 'error',
-            msg: 'Missing required fields: name, port, dataPath, cfgPath.'
+            msg: 'Missing required fields.'
         });
     }
 
@@ -237,15 +258,17 @@ export async function saveServer(ctx: AuthedCtx) {
         if (index === -1) {
             return ctx.send<ApiToastResp>({ type: 'error', msg: 'Server not found.' });
         }
-        servers[index] = { id, name, port: parsedPort, dataPath, cfgPath };
+        servers[index] = { id, name, port: parsedPort, dataPath, cfgPath: cfgPath || '' };
         await writeServers(servers);
+        configStoreInstances.delete(id);
+        configStoreInitPromises.delete(id);
         return ctx.send<ApiToastResp>({ type: 'success', msg: `Server "${name}" updated successfully.` });
     } else {
         // Create mode
         const newId = `server-${Date.now()}`;
-        servers.push({ id: newId, name, port: parsedPort, dataPath, cfgPath });
+        servers.push({ id: newId, name, port: parsedPort, dataPath, cfgPath: isCreatingNew ? '' : cfgPath! });
         await writeServers(servers);
-        return ctx.send<ApiToastResp>({ type: 'success', msg: `Server "${name}" created successfully.` });
+        return ctx.send<ApiToastResp & { id?: string }>({ type: 'success', msg: `Server "${name}" created successfully.`, id: newId });
     }
 }
 
@@ -309,11 +332,13 @@ export async function controlServer(ctx: AuthedCtx) {
         }
 
         try {
+            const targetStore = await getServerContextStore(server.id);
+            const baseVibeConfig = targetStore ? targetStore.vibeConfig : vibeConfig;
             const { vibeConfigStoreContext } = await import('@core/vibeSM');
             const customVibeConfig = {
-                ...vibeConfig,
+                ...baseVibeConfig,
                 server: {
-                    ...vibeConfig.server,
+                    ...baseVibeConfig.server,
                     dataPath: server.dataPath,
                     cfgPath: server.cfgPath,
                 }
@@ -425,6 +450,12 @@ export async function controlServer(ctx: AuthedCtx) {
                 onlineServers.delete(id);
                 loggerInstances.delete(id);
                 gameLoggerInstances.delete(id);
+                // Destroy Discord bot for this server
+                const bot = discordBotInstances.get(id);
+                if (bot) {
+                    try { bot.attemptBotReset(false); } catch (e) {}
+                    discordBotInstances.delete(id);
+                }
                 if ((globalThis as any).multiHostingCfxIds) {
                     (globalThis as any).multiHostingCfxIds.delete(id);
                 }
@@ -442,6 +473,24 @@ export async function controlServer(ctx: AuthedCtx) {
             }
             (globalThis as any).multiHostingStartTimes.set(id, Date.now());
 
+            // Start Discord bot for this server instance
+            try {
+                const targetStore = await getServerContextStore(server.id);
+                const serverDiscordCfg = targetStore?.vibeConfig?.discordBot;
+                if (serverDiscordCfg?.enabled && serverDiscordCfg?.token) {
+                    const DiscordBot = (await import('../modules/DiscordBot')).default;
+                    // Destroy any existing bot for this server
+                    const existingBot = discordBotInstances.get(id);
+                    if (existingBot) {
+                        try { existingBot.attemptBotReset(false); } catch (e) {}
+                    }
+                    const bot = new DiscordBot(id);
+                    discordBotInstances.set(id, bot);
+                }
+            } catch (e) {
+                console.error(`Failed to start Discord bot for server ${server.name}: ${(e as any).message}`);
+            }
+
             return ctx.send<ApiToastResp>({ type: 'success', msg: `Server "${server.name}" started successfully on port ${server.port}.` });
         } catch (e) {
             return ctx.send<ApiToastResp>({ type: 'error', msg: `Failed to spawn server: ${(e as any).message}` });
@@ -450,6 +499,13 @@ export async function controlServer(ctx: AuthedCtx) {
     } else if (action === 'stop') {
         if (!runningServers.has(id)) {
             return ctx.send<ApiToastResp>({ type: 'success', msg: 'Server is already stopped.' });
+        }
+
+        // Destroy Discord bot for this server
+        const bot = discordBotInstances.get(id);
+        if (bot) {
+            try { bot.attemptBotReset(false); } catch (e) {}
+            discordBotInstances.delete(id);
         }
 
         const proc = runningProcesses.get(id);

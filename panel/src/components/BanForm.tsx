@@ -8,6 +8,7 @@ import { DropDownSelect, DropDownSelectContent, DropDownSelectItem, DropDownSele
 import { banDurationToShortString, banDurationToString, cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import type { BanTemplatesDataType } from "@shared/otherTypes";
+import { useTranslation } from "@/hooks/translator";
 
 // Consts
 const reasonTruncateLength = 150;
@@ -34,6 +35,7 @@ type BanFormProps = {
  * A form to set ban reason and duration.
  */
 export default forwardRef(function BanForm({ banTemplates, disabled, onNavigateAway }: BanFormProps, ref) {
+    const { t } = useTranslation();
     const reasonRef = useRef<HTMLInputElement>(null);
     const customMultiplierRef = useRef<HTMLInputElement>(null);
     const setLocation = useLocation()[1];
@@ -124,13 +126,13 @@ export default forwardRef(function BanForm({ banTemplates, disabled, onNavigateA
         if (!banTemplates.length) {
             banTemplatesContentNode = (
                 <div className="text-warning-inline text-center p-4">
-                    You do not have any template configured. <br />
+                    {t('web.ban_form.no_templates')} <br />
                     <Link
                         href="/settings/ban-templates"
                         className="cursor-pointer underline hover:text-accent"
                         onClick={() => { closeModal(); }}
                     >
-                        Add Ban Template
+                        {t('web.ban_form.add_ban_template')}
                         <ExternalLinkIcon className="inline mr-1 h-4" />
                     </Link>
                 </div>
@@ -142,7 +144,7 @@ export default forwardRef(function BanForm({ banTemplates, disabled, onNavigateA
                     value={ADD_NEW_SELECT_OPTION}
                     className="font-bold text-warning-inline"
                 >
-                    Add Ban Template
+                    {t('web.ban_form.add_ban_template')}
                     <ExternalLinkIcon className="inline mr-1 h-4" />
                 </DropDownSelectItem>
             </>;
@@ -153,13 +155,13 @@ export default forwardRef(function BanForm({ banTemplates, disabled, onNavigateA
         <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
                 <Label htmlFor="banReason">
-                    Reason
+                    {t('web.ban_templates.label_reason')}
                 </Label>
                 <div className="flex gap-1">
                     <Input
                         id="banReason"
                         ref={reasonRef}
-                        placeholder="The reason for the ban, rule violated, etc."
+                        placeholder={t('web.ban_templates.placeholder_reason')}
                         className="w-full"
                         disabled={disabled}
                         autoFocus
@@ -186,7 +188,7 @@ export default forwardRef(function BanForm({ banTemplates, disabled, onNavigateA
             </div>
             <div className="flex flex-col gap-3">
                 <Label htmlFor="durationSelect">
-                    Duration
+                    {t('web.ban_templates.label_duration')}
                 </Label>
                 <div className="space-y-1">
                     <Select
@@ -195,17 +197,17 @@ export default forwardRef(function BanForm({ banTemplates, disabled, onNavigateA
                         disabled={disabled}
                     >
                         <SelectTrigger id="durationSelect" className="tracking-wide">
-                            <SelectValue placeholder="Select Duration" />
+                            <SelectValue placeholder={t('web.ban_templates.select_duration_placeholder')} />
                         </SelectTrigger>
                         <SelectContent className="tracking-wide">
-                            <SelectItem value="custom" className="font-bold">Custom (set below)</SelectItem>
-                            <SelectItem value="2 hours">2 HOURS</SelectItem>
-                            <SelectItem value="8 hours">8 HOURS</SelectItem>
-                            <SelectItem value="1 day">1 DAY</SelectItem>
-                            <SelectItem value="2 days">2 DAYS</SelectItem>
-                            <SelectItem value="1 week">1 WEEK</SelectItem>
-                            <SelectItem value="2 weeks">2 WEEKS</SelectItem>
-                            <SelectItem value="permanent" className="font-bold">Permanent</SelectItem>
+                            <SelectItem value="custom" className="font-bold">{t('web.ban_templates.duration_custom')}</SelectItem>
+                            <SelectItem value="2 hours">{t('web.ban_templates.duration_2h')}</SelectItem>
+                            <SelectItem value="8 hours">{t('web.ban_templates.duration_8h')}</SelectItem>
+                            <SelectItem value="1 day">{t('web.ban_templates.duration_1d')}</SelectItem>
+                            <SelectItem value="2 days">{t('web.ban_templates.duration_2d')}</SelectItem>
+                            <SelectItem value="1 week">{t('web.ban_templates.duration_1w')}</SelectItem>
+                            <SelectItem value="2 weeks">{t('web.ban_templates.duration_2w')}</SelectItem>
+                            <SelectItem value="permanent" className="font-bold">{t('web.ban_templates.duration_permanent')}</SelectItem>
                         </SelectContent>
                     </Select>
                     <div className="flex flex-row gap-2">
@@ -229,10 +231,10 @@ export default forwardRef(function BanForm({ banTemplates, disabled, onNavigateA
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="tracking-wide">
-                                <SelectItem value="hours">HOURS</SelectItem>
-                                <SelectItem value="days">DAYS</SelectItem>
-                                <SelectItem value="weeks">WEEKS</SelectItem>
-                                <SelectItem value="months">MONTHS</SelectItem>
+                                <SelectItem value="hours">{t('web.ban_templates.select_unit_hours')}</SelectItem>
+                                <SelectItem value="days">{t('web.ban_templates.select_unit_days')}</SelectItem>
+                                <SelectItem value="weeks">{t('web.ban_templates.select_unit_weeks')}</SelectItem>
+                                <SelectItem value="months">{t('web.ban_templates.select_unit_months')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

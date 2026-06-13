@@ -31,9 +31,22 @@ export type ThemeType = {
     style: { [key: string]: string };
 };
 
+export type AdModalServerType = {
+    name: string;
+    url: string;
+    subtext: string;
+    img: string;
+    color: string;
+};
+export type AdModalDataType = {
+    title: string;
+    description: string;
+    servers: AdModalServerType[];
+};
 export type AdsDataType = {
     login: { img: string, url: string } | null;
     main: { img: string, url: string } | null;
+    adModal?: AdModalDataType | null;
 };
 
 export type InjectedTxConsts = {

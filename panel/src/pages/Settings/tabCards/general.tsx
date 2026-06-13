@@ -7,6 +7,9 @@ import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, Sele
 import InlineCode from "@/components/InlineCode"
 import TxAnchor from "@/components/TxAnchor"
 import { txToast } from "@/components/TxToaster"
+import SwitchText from '@/components/SwitchText'
+import { useAuth } from "@/hooks/auth"
+import { useTranslation } from "@/hooks/translator"
 
 
 const detectBrowserLanguage = () => {
@@ -28,9 +31,14 @@ const detectBrowserLanguage = () => {
 export const pageConfigs = {
     serverName: getPageConfig('general', 'serverName'),
     language: getPageConfig('general', 'language'),
+    twoFactorRequired: getPageConfig('general', 'twoFactorRequired'),
 } as const;
 
 export default function ConfigCardGeneral({ cardCtx, pageCtx }: SettingsCardProps) {
+    const { authData } = useAuth();
+    const isMaster = authData?.isMaster === true;
+    const { t } = useTranslation();
+
     const [states, dispatch] = useReducer(
         configsReducer<typeof pageConfigs>,
         null,
@@ -65,10 +73,10 @@ export default function ConfigCardGeneral({ cardCtx, pageCtx }: SettingsCardProp
         if (!hasChanges) return;
 
         if (!localConfigs.general?.serverName) {
-            return txToast.error('The Server Name is required.');
+            return txToast.error(t('web.settings.general.server_name_required'));
         }
         if (localConfigs.general?.serverName?.length > 18) {
-            return txToast.error('The Server Name is too big.');
+            return txToast.error(t('web.settings.general.server_name_too_big'));
         }
         pageCtx.saveChanges(cardCtx, localConfigs);
     }
@@ -108,7 +116,7 @@ export default function ConfigCardGeneral({ cardCtx, pageCtx }: SettingsCardProp
             pageCtx={pageCtx}
             onClickSave={handleOnSave}
         >
-            <SettingItem label="Server Name" htmlFor={cfg.serverName.eid} required>
+            <SettingItem label={t('web.settings.general.server_name')} htmlFor={cfg.serverName.eid} required>
                 <Input
                     id={cfg.serverName.eid}
                     ref={serverNameRef}
@@ -118,11 +126,11 @@ export default function ConfigCardGeneral({ cardCtx, pageCtx }: SettingsCardProp
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    A <strong>short</strong> server name to be used in the vibeSM interface and Server/Discord messages. <br />
-                    The name must be between 1 and 18 characters.
+                    {t('web.settings.general.server_name_desc1')}<strong>{t('web.settings.general.server_name_desc2')}</strong>{t('web.settings.general.server_name_desc3')} <br />
+                    {t('web.settings.general.server_name_desc4')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Language" htmlFor={cfg.language.eid} required>
+            <SettingItem label={t('web.settings.general.language')} htmlFor={cfg.language.eid} required>
                 {/* TODO: add a "Edit xxx" button besides the language for easy custom.json locale */}
                 <Select
                     value={states.language}
@@ -141,9 +149,23 @@ export default function ConfigCardGeneral({ cardCtx, pageCtx }: SettingsCardProp
                     </SelectContent>
                 </Select>
                 <SettingItemDesc>
-                    The language to use on Chat/Discord messages. <br />
-                    You can customize the phrases/words by using the <InlineCode>Custom</InlineCode> option. <br />
-                    For more information, please read the <TxAnchor href="https://github.com/tabarra/vibeSM/blob/master/docs/translation.md">documentation</TxAnchor>.
+                    {t('web.settings.general.language_desc1')} <br />
+                    {t('web.settings.general.language_desc2')}<InlineCode>Custom</InlineCode>{t('web.settings.general.language_desc3')} <br />
+                    {t('web.settings.general.language_desc4')}<TxAnchor href="https://github.com/tabarra/vibeSM/blob/master/docs/translation.md">{t('web.settings.general.language_desc5')}</TxAnchor>.
+                </SettingItemDesc>
+            </SettingItem>
+            <SettingItem label={t('web.2fa.settings_title')} htmlFor={cfg.twoFactorRequired.eid}>
+                <SwitchText
+                    id={cfg.twoFactorRequired.eid}
+                    checked={states.twoFactorRequired}
+                    onCheckedChange={cfg.twoFactorRequired.state.set}
+                    disabled={pageCtx.isReadOnly || !isMaster}
+                >
+                    {t('web.2fa.settings_switch')}
+                </SwitchText>
+                <SettingItemDesc>
+                    {t('web.2fa.settings_desc')}
+                    {!isMaster && <span className="text-destructive-inline block mt-1">{t('web.2fa.settings_only_master')}</span>}
                 </SettingItemDesc>
             </SettingItem>
         </SettingsCardShell>

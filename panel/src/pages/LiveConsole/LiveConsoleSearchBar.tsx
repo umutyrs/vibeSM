@@ -4,6 +4,7 @@ import type { ISearchDecorationOptions, ISearchOptions, SearchAddon } from "@xte
 import { ArrowDownIcon, ArrowUpIcon, CaseSensitiveIcon, RegexIcon, WholeWordIcon, XIcon } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useEventListener } from "usehooks-ts";
+import { useTranslation } from "@/hooks/translator";
 
 
 type ButtonProps = {
@@ -31,7 +32,7 @@ function SearchBarButton({ title, onClick, isActive, children }: ButtonProps) {
 }
 
 
-const labelNoResults = 'No results';
+const labelNoResults = 'no_results';
 const xtermDecorations = {
     activeMatchBackground: '#FF00DC',
     activeMatchColorOverviewRuler: '#FF00DC',
@@ -46,6 +47,7 @@ type LiveConsoleSearchBarProps = {
 };
 
 export default function LiveConsoleSearchBar({ show, setShow, searchAddon }: LiveConsoleSearchBarProps) {
+    const { t } = useTranslation();
     const [caseSensitive, setCaseSensitive] = useState(false);
     const [wholeWord, setWholeWord] = useState(false);
     const [regex, setRegex] = useState(false);
@@ -157,28 +159,28 @@ export default function LiveConsoleSearchBar({ show, setShow, searchAddon }: Liv
                 <Input
                     ref={inputRef}
                     className="h-8"
-                    placeholder="Search string"
+                    placeholder={t('web.liveconsole.search.placeholder')}
                     onKeyDown={handleInputKeyDown}
                     onChange={handleInputChange}
                     onBlur={() => { searchAddon.clearActiveDecoration() }}
                 />
                 <div className="absolute top-1/2 right-1 transform -translate-y-1/2 flex text-muted-foreground gap-2">
                     <SearchBarButton
-                        title="Case Sensitive"
+                        title={t('web.liveconsole.search.case_sensitive')}
                         isActive={caseSensitive}
                         onClick={handleCaseSensitiveMode}
                     >
                         <CaseSensitiveIcon className="h-5 w-5" />
                     </SearchBarButton>
                     <SearchBarButton
-                        title="Whole Word"
+                        title={t('web.liveconsole.search.whole_word')}
                         isActive={wholeWord}
                         onClick={handleWholeWordMode}
                     >
                         <WholeWordIcon className="h-5 w-5" />
                     </SearchBarButton>
                     <SearchBarButton
-                        title="Regex"
+                        title={t('web.liveconsole.search.regex')}
                         isActive={regex}
                         onClick={handleRegexMode}
                     >
@@ -187,23 +189,23 @@ export default function LiveConsoleSearchBar({ show, setShow, searchAddon }: Liv
                 </div>
             </div>
             <div className="flex grow text-sm text-muted-foreground whitespace-nowrap min-w-[8ch]">
-                {resultCount}
+                {resultCount === 'no_results' ? t('web.liveconsole.search.no_results') : resultCount}
             </div>
             <div className="flex gap-2 text-muted-foreground">
                 <SearchBarButton
-                    title="Previous"
+                    title={t('web.liveconsole.search.previous')}
                     onClick={handlePrevious}
                 >
                     <ArrowUpIcon className="h-5 w-5" />
                 </SearchBarButton>
                 <SearchBarButton
-                    title="Next"
+                    title={t('web.liveconsole.search.next')}
                     onClick={handleNext}
                 >
                     <ArrowDownIcon className="h-5 w-5" />
                 </SearchBarButton>
                 <SearchBarButton
-                    title="Close"
+                    title={t('web.liveconsole.search.close')}
                     onClick={() => { setShow(false) }}
                 >
                     <XIcon className="h-5 w-5" />

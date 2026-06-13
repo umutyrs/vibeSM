@@ -32,10 +32,180 @@ export default async function MasterActionsAction(ctx: AuthedCtx) {
         return handleCleanDatabase(ctx);
     } else if (action == 'revokeWhitelists') {
         return handleRevokeWhitelists(ctx);
+    } else if (action == 'triggerArtifactsUpdate') {
+        return handleTriggerArtifactsUpdate(ctx);
+    } else if (action == 'getArtifactsUpdateStatus') {
+        return handleGetArtifactsUpdateStatus(ctx);
     } else {
         return ctx.send({ error: 'Unknown settings action.' });
     }
 };
+
+import { vibeEnv, vibeHostConfig } from '@core/globalData';
+import path from 'node:path';
+import fs from 'node:fs';
+import fse from 'fs-extra';
+import StreamZip from 'node-stream-zip';
+import got from '@lib/got';
+import execa from 'execa';
+
+let updateStatus = {
+    running: false,
+    step: '',
+    error: null as string | null,
+    success: false,
+    targetPath: '',
+    progress: 0,
+};
+
+async function handleGetArtifactsUpdateStatus(ctx: AuthedCtx) {
+    return ctx.send(updateStatus);
+}
+
+async function handleTriggerArtifactsUpdate(ctx: AuthedCtx) {
+    if (updateStatus.running) {
+        return ctx.send({ error: 'An update is already running.' });
+    }
+    const channel = ctx.request.body.channel;
+    if (typeof channel !== 'string') {
+        return ctx.send({ error: 'Invalid Request: missing channel selection.' });
+    }
+
+    // Reset status
+    updateStatus = {
+        running: true,
+        step: 'Starting...',
+        error: null,
+        success: false,
+        targetPath: '',
+        progress: 0,
+    };
+
+    // Run in background
+    runArtifactsUpdate(channel).catch((err) => {
+        updateStatus.running = false;
+        updateStatus.error = err.message;
+        console.error('Artifacts update failed:', err);
+    });
+
+    return ctx.send({ success: true });
+}
+
+async function resolveArtifactDownloadUrl(channel: string): Promise<{ url: string; build: string }> {
+    const isWin = vibeEnv.isWindows;
+    const platform = isWin ? 'win32' : 'linux';
+    
+    // If it's a channel (recommended, optional, latest)
+    if (['recommended', 'optional', 'latest'].includes(channel)) {
+        const cacheBuster = Math.floor(Date.now() / 5_000_000);
+        const reqUrl = `https://changelogs-live.fivem.net/api/changelog/versions/${platform}/server?${cacheBuster}`;
+        const resp: any = await got(reqUrl).json();
+        
+        let build = '';
+        let url = '';
+        if (channel === 'recommended') {
+            build = resp.recommended.toString();
+            url = resp.recommended_download;
+        } else if (channel === 'optional') {
+            build = resp.optional.toString();
+            url = resp.optional_download;
+        } else if (channel === 'latest') {
+            build = resp.latest.toString();
+            url = resp.latest_download;
+        }
+        return { url, build };
+    }
+    
+    // Otherwise, treat as custom build number
+    const buildNumber = parseInt(channel);
+    if (isNaN(buildNumber) || buildNumber <= 0) {
+        throw new Error('Invalid build selection or build number.');
+    }
+    
+    const repoUrl = isWin 
+        ? 'https://runtime.fivem.net/artifacts/fivem/build_server_windows/master/' 
+        : 'https://runtime.fivem.net/artifacts/fivem/build_proot_linux/master/';
+        
+    const html = await got(repoUrl).text();
+    const fileExtension = isWin ? 'server\\.zip' : 'fx\\.tar\\.xz';
+    const regex = new RegExp(`href="(${buildNumber}-[a-f0-9]+/${fileExtension})"`, 'i');
+    const match = html.match(regex);
+    if (!match) {
+        throw new Error(`Could not find artifact link for build ${buildNumber} on FiveM repository.`);
+    }
+    
+    return {
+        url: repoUrl + match[1],
+        build: buildNumber.toString()
+    };
+}
+
+async function runArtifactsUpdate(channel: string) {
+    const isWin = vibeEnv.isWindows;
+    
+    updateStatus.progress = 5;
+    updateStatus.step = 'Resolving artifact URL for channel: ' + channel;
+    const { url, build } = await resolveArtifactDownloadUrl(channel);
+    
+    const tmpDir = vibeHostConfig.dataSubPath('tmp_artifacts_update');
+    await fse.ensureDir(tmpDir);
+    const archiveName = isWin ? 'server.zip' : 'fx.tar.xz';
+    const archivePath = path.join(tmpDir, archiveName);
+    
+    updateStatus.step = `Downloading build ${build}...`;
+    const gotOptions = {
+        timeout: { request: 300e3 },
+        retry: { limit: 3 },
+    };
+    
+    const responseStream = got.stream(url, gotOptions);
+    responseStream.on('downloadProgress', (progress) => {
+        const pct = Math.round(progress.percent * 100);
+        updateStatus.progress = Math.max(5, Math.min(85, Math.round(5 + pct * 0.8))); // map 0-100% download to 5-85% total progress
+        updateStatus.step = `Downloading build ${build} (${pct}%)...`;
+    });
+    
+    const writeStream = fs.createWriteStream(archivePath);
+    
+    await new Promise<void>((resolve, reject) => {
+        responseStream.pipe(writeStream);
+        responseStream.on('error', (err) => reject(err));
+        writeStream.on('error', (err) => reject(err));
+        writeStream.on('finish', () => resolve());
+    });
+    
+    const serverDir = vibeEnv.fxsPath.endsWith('citizen') ? path.dirname(vibeEnv.fxsPath) : vibeEnv.fxsPath;
+    const targetParent = path.dirname(serverDir);
+    const targetDir = path.join(targetParent, `server_updated_${build}`);
+    updateStatus.targetPath = targetDir;
+    
+    updateStatus.progress = 88;
+    updateStatus.step = `Extracting archive to: ${targetDir}`;
+    await fse.emptyDir(targetDir);
+    
+    if (isWin) {
+        const zip = new StreamZip.async({ file: archivePath });
+        await zip.extract(null, targetDir);
+        await zip.close();
+    } else {
+        await execa('tar', ['-xf', archivePath, '-C', targetDir]);
+    }
+    
+    updateStatus.progress = 95;
+    updateStatus.step = 'Copying vibeSM resource (monitor)...';
+    const targetTxaPath = path.join(targetDir, 'citizen', 'system_resources', 'monitor');
+    await fse.remove(targetTxaPath);
+    await fse.copy(vibeEnv.txaPath, targetTxaPath);
+    
+    updateStatus.progress = 98;
+    updateStatus.step = 'Cleaning up temporary files...';
+    await fse.remove(tmpDir);
+    
+    updateStatus.progress = 100;
+    updateStatus.step = 'Update finished successfully!';
+    updateStatus.success = true;
+    updateStatus.running = false;
+}
 
 
 /**

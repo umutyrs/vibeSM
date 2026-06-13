@@ -20,6 +20,7 @@ import type { ResetServerDataPathResp } from "@shared/otherTypes"
 import { useOpenConfirmDialog } from "@/hooks/dialogs"
 import { useAtom } from "jotai"
 import { multiHostingEnabledAtom } from "@/hooks/status"
+import { useTranslation } from "@/hooks/translator"
 
 
 
@@ -41,6 +42,7 @@ type RestartScheduleBoxProps = {
 };
 
 function RestartScheduleBox({ restartTimes, setRestartTimes, disabled }: RestartScheduleBoxProps) {
+    const { t } = useTranslation();
     const [isTimeInputOpen, setIsTimeInputOpen] = useState(false);
     const [animationParent] = useAutoAnimate();
 
@@ -73,36 +75,36 @@ function RestartScheduleBox({ restartTimes, setRestartTimes, disabled }: Restart
                     {restartTimes && restartTimes.length === 0 && (
                         <div className="text-sm text-muted-foreground">
                             <span>
-                                No schedule set. Click on the <strong>+</strong> button to add a time.
+                                {t('web.settings.fxserver.no_schedule')}
                             </span>
                             <p>
-                                {'Presets: '}
+                                {t('web.settings.fxserver.presets')}
                                 <a
                                     onClick={() => applyPreset(['00:00'])}
                                     className="cursor-pointer text-sm text-primary hover:underline"
                                 >
-                                    1x<span className={presetSpanClasses}>/day</span>
+                                    1x<span className={presetSpanClasses}>{t('web.settings.fxserver.per_day')}</span>
                                 </a>
                                 {', '}
                                 <a
                                     onClick={() => applyPreset(['00:00', '12:00'])}
                                     className="cursor-pointer text-sm text-primary hover:underline"
                                 >
-                                    2x<span className={presetSpanClasses}>/day</span>
+                                    2x<span className={presetSpanClasses}>{t('web.settings.fxserver.per_day')}</span>
                                 </a>
                                 {', '}
                                 <a
                                     onClick={() => applyPreset(['00:00', '08:00', '16:00'])}
                                     className="cursor-pointer text-sm text-primary hover:underline"
                                 >
-                                    3x<span className={presetSpanClasses}>/day</span>
+                                    3x<span className={presetSpanClasses}>{t('web.settings.fxserver.per_day')}</span>
                                 </a>
                                 {', '}
                                 <a
                                     onClick={() => applyPreset(['00:00', '06:00', '12:00', '18:00'])}
                                     className="cursor-pointer text-sm text-primary hover:underline"
                                 >
-                                    4x<span className={presetSpanClasses}>/day</span>
+                                    4x<span className={presetSpanClasses}>{t('web.settings.fxserver.per_day')}</span>
                                 </a>
                             </p>
                         </div>
@@ -145,7 +147,7 @@ function RestartScheduleBox({ restartTimes, setRestartTimes, disabled }: Restart
                 </div>
             </div>
             <TimeInputDialog
-                title="Add Restart Time"
+                title={t('web.settings.fxserver.add_time_title')}
                 isOpen={isTimeInputOpen}
                 onClose={() => setIsTimeInputOpen(false)}
                 onSubmit={addTime}
@@ -168,12 +170,13 @@ const getServerDataPlaceholder = (hostSuggested?: string) => {
 
 // Check if the browser timezone is different from the server timezone
 function TimeZoneWarning() {
+    const { t } = useTranslation();
     try {
         const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if (window.txConsts.serverTimezone !== browserTimezone) {
             return (
                 <SettingItemDesc className="text-destructive-inline">
-                    <strong>Warning:</strong> Your server timezone is set to <InlineCode>{window.txConsts.serverTimezone}</InlineCode>, but your browser timezone is <InlineCode>{browserTimezone}</InlineCode>. Make sure to configure the time according to the server timezone.
+                    <strong>{t('web.settings.fxserver.timezone_warn1')}</strong>{t('web.settings.fxserver.timezone_warn2')}<InlineCode>{window.txConsts.serverTimezone}</InlineCode>{t('web.settings.fxserver.timezone_warn3')}<InlineCode>{browserTimezone}</InlineCode>{t('web.settings.fxserver.timezone_warn4')}
                 </SettingItemDesc>
             );
         }
@@ -197,6 +200,7 @@ export const pageConfigs = {
 } as const;
 
 export default function ConfigCardFxserver({ cardCtx, pageCtx }: SettingsCardProps) {
+    const { t } = useTranslation();
     const [isMultiHostingEnabled, setIsMultiHostingEnabled] = useAtom(multiHostingEnabledAtom);
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [isResettingServerData, setIsResettingServerData] = useState(false);
@@ -273,16 +277,16 @@ export default function ConfigCardFxserver({ cardCtx, pageCtx }: SettingsCardPro
 
         if (!localConfigs.server?.dataPath) {
             return txToast.error({
-                title: 'The Server Data Folder is required.',
+                title: t('web.settings.fxserver.data_folder_required'),
                 md: true,
-                msg: 'If you want to return to the Setup page, click on the "Reset" button instead.',
+                msg: t('web.settings.fxserver.data_folder_setup'),
             });
         }
         if (localConfigs.server.cfgPath !== undefined && !localConfigs.server.cfgPath) {
             return txToast.error({
-                title: 'The CFG File Path is required.',
+                title: t('web.settings.fxserver.cfg_path_required'),
                 md: true,
-                msg: 'The value should probably be `server.cfg`.',
+                msg: t('web.settings.fxserver.cfg_path_suggested'),
             });
         }
         if (
@@ -290,9 +294,9 @@ export default function ConfigCardFxserver({ cardCtx, pageCtx }: SettingsCardPro
             && localConfigs.server.startupArgs.some((arg) => arg.toLowerCase() === 'onesync')
         ) {
             return txToast.error({
-                title: 'You cannot set OneSync in Startup Arguments.',
+                title: t('web.settings.fxserver.onesync_err_title'),
                 md: true,
-                msg: 'Please use the selectbox below it.',
+                msg: t('web.settings.fxserver.onesync_err_msg'),
             });
         }
         pageCtx.saveChanges(cardCtx, localConfigs);
@@ -312,20 +316,20 @@ export default function ConfigCardFxserver({ cardCtx, pageCtx }: SettingsCardPro
     });
     const handleResetServerData = () => {
         openConfirmDialog({
-            title: 'Reset Server Data Path',
+            title: t('web.settings.fxserver.reset_data_title'),
             message: (<>
-                Are you sure you want to reset the server data path? <br />
+                {t('web.settings.fxserver.reset_data_msg1')} <br />
                 <br />
-                <strong>This will not delete any resource files or database</strong>, but just reset the vibeSM configuration, allowing you to go back to the Setup page. <br />
-                If you want, you can set the path back to the current value later. <br />
+                <strong>{t('web.settings.fxserver.reset_data_msg2')}</strong>{t('web.settings.fxserver.reset_data_msg3')} <br />
+                {t('web.settings.fxserver.reset_data_msg4')} <br />
                 <br />
-                <strong className="text-warning-inline">Warning:</strong> take note of the current path before proceeding, so you can set it back later if you need to. Current path:
+                <strong className="text-warning-inline">{t('web.settings.fxserver.reset_data_msg5')}</strong>{t('web.settings.fxserver.reset_data_msg6')}
                 <Input value={cfg.dataPath.initialValue} className="mt-2" readOnly />
             </>),
             onConfirm: () => {
                 setIsResettingServerData(true);
                 resetServerDataApi({
-                    toastLoadingMessage: 'Resetting server data path...',
+                    toastLoadingMessage: t('web.settings.fxserver.resetting_data'),
                     success: (data, toastId) => {
                         if (data.type === 'success') {
                             setLocation('/server/setup');
@@ -350,7 +354,7 @@ export default function ConfigCardFxserver({ cardCtx, pageCtx }: SettingsCardPro
             advancedVisible={showAdvanced}
             advancedSetter={setShowAdvanced}
         >
-            <SettingItem label="Server Data Folder" htmlFor={cfg.dataPath.eid} required>
+            <SettingItem label={t('web.settings.fxserver.data_folder_label')} htmlFor={cfg.dataPath.eid} required>
                 <div className="flex gap-2">
                     <Input
                         id={cfg.dataPath.eid}
@@ -367,21 +371,21 @@ export default function ConfigCardFxserver({ cardCtx, pageCtx }: SettingsCardPro
                         disabled={pageCtx.isReadOnly || !hasPerm('all_permissions') || isResettingServerData}
                         onClick={handleResetServerData}
                     >
-                        <Undo2Icon className="mr-2 h-4 w-4" /> Reset
+                        <Undo2Icon className="mr-2 h-4 w-4" /> {t('web.settings.discord.reset_default')}
                     </Button>
                 </div>
                 <SettingItemDesc>
-                    The full path of the folder that <strong>contains</strong> the <InlineCode>resources</InlineCode> folder, usually it's the same place that contains your <InlineCode>server.cfg</InlineCode>. <br />
-                    Resetting this value will allow you to go back to the Setup page, without deleting any files.
+                    {t('web.settings.fxserver.data_folder_desc1')}<strong>{t('web.settings.fxserver.data_folder_desc2')}</strong>{t('web.settings.fxserver.data_folder_desc3')}<InlineCode>resources</InlineCode>{t('web.settings.fxserver.data_folder_desc4')}<InlineCode>server.cfg</InlineCode>. <br />
+                    {t('web.settings.fxserver.data_folder_desc5')}
                     {pageCtx.apiData?.dataPath && pageCtx.apiData?.hasCustomDataPath && (<>
                         <br />
                         <span className="text-warning-inline">
-                            {window.txConsts.hostConfigSource}: This path should start with <InlineCode>{pageCtx.apiData.dataPath}</InlineCode> .
+                            {window.txConsts.hostConfigSource}: {t('web.settings.fxserver.data_folder_desc6')} <InlineCode>{pageCtx.apiData.dataPath}</InlineCode> .
                         </span>
                     </>)}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Restart Schedule" showOptional>
+            <SettingItem label={t('web.settings.fxserver.restart_schedule_label')} showOptional>
                 <RestartScheduleBox
                     restartTimes={states.restarterSchedule}
                     setRestartTimes={cfg.restarterSchedule.state.set}
@@ -389,45 +393,45 @@ export default function ConfigCardFxserver({ cardCtx, pageCtx }: SettingsCardPro
                 />
                 <TimeZoneWarning />
                 <SettingItemDesc>
-                    At which times of day to restart the server. <br />
-                    <strong>Note:</strong> Make sure your schedule matches your server time and not your local time.
+                    {t('web.settings.fxserver.restart_schedule_desc1')} <br />
+                    <strong>{t('web.settings.fxserver.restart_schedule_desc2')}</strong>{t('web.settings.fxserver.restart_schedule_desc3')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Quiet Mode">
+            <SettingItem label={t('web.settings.fxserver.quiet_mode_label')}>
                 <SwitchText
                     id={cfg.quietMode.eid}
-                    checkedLabel="Enabled"
-                    uncheckedLabel="Disabled"
+                    checkedLabel={t('web.settings.enabled')}
+                    uncheckedLabel={t('web.settings.disabled')}
                     checked={forceQuietMode || states.quietMode}
                     onCheckedChange={cfg.quietMode.state.set}
                     disabled={pageCtx.isReadOnly || forceQuietMode}
                 />
                 <SettingItemDesc>
-                    Do not print FXServer's output to the terminal. <br />
-                    You will still be able to use the Live Console.
+                    {t('web.settings.fxserver.quiet_mode_desc1')} <br />
+                    {t('web.settings.fxserver.quiet_mode_desc2')}
                     {forceQuietMode && (<>
                         <br />
-                        <span className="text-warning-inline">{window.txConsts.hostConfigSource}: This setting is locked and cannot be changed.</span>
+                        <span className="text-warning-inline">{window.txConsts.hostConfigSource}: {t('web.settings.fxserver.quiet_mode_locked')}</span>
                     </>)}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Multi-Hosting">
+            <SettingItem label={t('web.settings.fxserver.multi_hosting_label')}>
                 <SwitchText
                     id="settings-multi-hosting"
-                    checkedLabel="Enabled"
-                    uncheckedLabel="Disabled"
+                    checkedLabel={t('web.settings.enabled')}
+                    uncheckedLabel={t('web.settings.disabled')}
                     checked={isMultiHostingEnabled}
                     onCheckedChange={setIsMultiHostingEnabled}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Activate the Multi-Hosting dashboard page, letting you run and manage multiple separate FXServers simultaneously.
+                    {t('web.settings.fxserver.multi_hosting_desc')}
                 </SettingItemDesc>
             </SettingItem>
 
             {showAdvanced && <AdvancedDivider />}
 
-            <SettingItem label="CFG File Path" htmlFor={cfg.cfgPath.eid} showIf={showAdvanced} required>
+            <SettingItem label={t('web.settings.fxserver.cfg_path_label')} htmlFor={cfg.cfgPath.eid} showIf={showAdvanced} required>
                 <Input
                     id={cfg.cfgPath.eid}
                     ref={cfgPathRef}
@@ -438,11 +442,11 @@ export default function ConfigCardFxserver({ cardCtx, pageCtx }: SettingsCardPro
                     required
                 />
                 <SettingItemDesc>
-                    The path to your server config file, probably named <InlineCode>server.cfg</InlineCode>. <br />
-                    This can either be absolute, or relative to the Server Data folder.
+                    {t('web.settings.fxserver.cfg_path_desc1')}<InlineCode>server.cfg</InlineCode>. <br />
+                    {t('web.settings.fxserver.cfg_path_desc2')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Startup Arguments" htmlFor={cfg.startupArgs.eid} showIf={showAdvanced}>
+            <SettingItem label={t('web.settings.fxserver.startup_args_label')} htmlFor={cfg.startupArgs.eid} showIf={showAdvanced}>
                 <Input
                     id={cfg.startupArgs.eid}
                     ref={startupArgsRef}
@@ -452,63 +456,62 @@ export default function ConfigCardFxserver({ cardCtx, pageCtx }: SettingsCardPro
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Additional command-line arguments to pass to the FXServer instance such as NodeJS CLI flags. <br />
-                    <strong>Warning:</strong> You almost certainly should not use this option, commands and convars should be placed in your <InlineCode>server.cfg</InlineCode> instead.
+                    {t('web.settings.fxserver.startup_args_desc1')} <br />
+                    <strong>{t('web.settings.fxserver.timezone_warn1')}</strong>{t('web.settings.fxserver.startup_args_desc2')}<InlineCode>server.cfg</InlineCode>{t('web.settings.fxserver.startup_args_desc3')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="OneSync" htmlFor={cfg.onesync.eid} showIf={showAdvanced}>
+            <SettingItem label={t('web.settings.fxserver.onesync_label')} htmlFor={cfg.onesync.eid} showIf={showAdvanced}>
                 <Select
                     value={states.onesync}
                     onValueChange={cfg.onesync.state.set as any}
                     disabled={pageCtx.isReadOnly}
                 >
                     <SelectTrigger id={cfg.onesync.eid}>
-                        <SelectValue placeholder="Select OneSync option" />
+                        <SelectValue placeholder={t('web.settings.fxserver.onesync_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="on">On (recommended)</SelectItem>
-                        <SelectItem value="legacy">Legacy</SelectItem>
-                        <SelectItem value="off">Off</SelectItem>
+                        <SelectItem value="on">{t('web.settings.fxserver.onesync_on')}</SelectItem>
+                        <SelectItem value="legacy">{t('web.settings.fxserver.onesync_legacy')}</SelectItem>
+                        <SelectItem value="off">{t('web.settings.fxserver.onesync_off')}</SelectItem>
                     </SelectContent>
                 </Select>
                 <SettingItemDesc>
-                    Most servers should be using <strong>OneSync On</strong>. <br />
-                    The other options are considered deprecated and should not be used unless you know what you're doing.
-                    For more information, please read the <TxAnchor href="https://docs.fivem.net/docs/scripting-reference/onesync/" >documentation</TxAnchor>.
+                    {t('web.settings.fxserver.onesync_desc1')}<strong>{t('web.settings.fxserver.onesync_desc2')}</strong>. <br />
+                    {t('web.settings.fxserver.onesync_desc3')}<TxAnchor href="https://docs.fivem.net/docs/scripting-reference/onesync/" >{t('web.settings.fxserver.onesync_desc4')}</TxAnchor>.
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Autostart" showIf={showAdvanced}>
+            <SettingItem label={t('web.settings.fxserver.autostart_label')} showIf={showAdvanced}>
                 <SwitchText
                     id={cfg.autoStart.eid}
-                    checkedLabel="Enabled"
-                    uncheckedLabel="Disabled"
+                    checkedLabel={t('web.settings.enabled')}
+                    uncheckedLabel={t('web.settings.disabled')}
                     checked={states.autoStart}
                     onCheckedChange={cfg.autoStart.state.set}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Start the server automatically after <strong>vibeSM</strong> starts.
+                    {t('web.settings.fxserver.autostart_desc1')}<strong>vibeSM</strong>{t('web.settings.fxserver.autostart_desc2')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Resource Starting Tolerance" htmlFor={cfg.resourceTolerance.eid} showIf={showAdvanced}>
+            <SettingItem label={t('web.settings.fxserver.tolerance_label')} htmlFor={cfg.resourceTolerance.eid} showIf={showAdvanced}>
                 <Select
                     value={selectNumberUtil.toUi(states.resourceTolerance)}
                     onValueChange={(val) => cfg.resourceTolerance.state.set(selectNumberUtil.toCfg(val))}
                     disabled={pageCtx.isReadOnly}
                 >
                     <SelectTrigger id={cfg.resourceTolerance.eid}>
-                        <SelectValue placeholder="Select..." />
+                        <SelectValue placeholder={t('web.settings.fxserver.tolerance_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="90">1.5 minutes (default)</SelectItem>
-                        <SelectItem value="180">3 minutes</SelectItem>
-                        <SelectItem value="300">5 minutes</SelectItem>
-                        <SelectItem value="600">10 minutes</SelectItem>
+                        <SelectItem value="90">{t('web.settings.fxserver.tolerance_opt1')}</SelectItem>
+                        <SelectItem value="180">{t('web.settings.fxserver.tolerance_opt2')}</SelectItem>
+                        <SelectItem value="300">{t('web.settings.fxserver.tolerance_opt3')}</SelectItem>
+                        <SelectItem value="600">{t('web.settings.fxserver.tolerance_opt4')}</SelectItem>
                     </SelectContent>
                 </Select>
                 <SettingItemDesc>
-                    At server boot, how much time to wait for any single resource to start before restarting the server. <br />
-                    <strong>Note:</strong> If you are getting <InlineCode>failed to start in time</InlineCode> errors, increase this value.
+                    {t('web.settings.fxserver.tolerance_desc1')} <br />
+                    <strong>{t('web.settings.fxserver.restart_schedule_desc2')}</strong>{t('web.settings.fxserver.tolerance_desc3')}<InlineCode>failed to start in time</InlineCode>{t('web.settings.fxserver.tolerance_desc4')}
                 </SettingItemDesc>
             </SettingItem>
         </SettingsCardShell>

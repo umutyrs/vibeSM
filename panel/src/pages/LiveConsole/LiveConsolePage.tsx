@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useEventListener } from 'usehooks-ts';
 import { useContentRefresh } from "@/hooks/pages";
 import { debounce, throttle } from 'throttle-debounce';
+import { useTranslation } from "@/hooks/translator";
 
 import { ChevronsDownIcon, Loader2Icon } from "lucide-react";
 import LiveConsoleFooter from "./LiveConsoleFooter";
@@ -79,6 +80,7 @@ const defaultTermPrefix = formatTermTimestamp(
 
 //Main component
 export default function LiveConsolePage() {
+    const { t } = useTranslation();
     const [isSaveSheetOpen, setIsSaveSheetOpen] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [showSearchBar, setShowSearchBar] = useState(false);
@@ -184,11 +186,11 @@ export default function LiveConsolePage() {
                     ).then((res) => {
                         //undefined if no error
                         if (res === false) {
-                            txToast.error('Failed to copy to clipboard :(');
+                            txToast.error(t('web.liveconsole.err_copy_failed_sad'));
                         }
                     }).catch((error) => {
                         txToast.error({
-                            title: 'Failed to copy to clipboard:',
+                            title: t('web.liveconsole.err_copy_failed'),
                             msg: error.message,
                         });
                     });
@@ -391,7 +393,7 @@ export default function LiveConsolePage() {
         term.clear();
         searchAddon.clearDecorations();
         setShowSearchBar(false);
-        term.write(`${ANSI.YELLOW}[console cleared]${ANSI.RESET}\n`);
+        term.write(`${ANSI.YELLOW}${t('web.liveconsole.console_cleared')}${ANSI.RESET}\n`);
     }
     const toggleSearchBar = () => {
         setShowSearchBar(!showSearchBar);
@@ -419,7 +421,7 @@ export default function LiveConsolePage() {
                         <div className='flex flex-col gap-6 items-center justify-center text-muted-foreground select-none'>
                             <Loader2Icon className='w-16 h-16 animate-spin' />
                             <h2 className='text-3xl tracking-wider font-light animate-pulse'>
-                                &nbsp;&nbsp;&nbsp;Connecting...
+                                &nbsp;&nbsp;&nbsp;{t('web.liveconsole.connecting')}
                             </h2>
                         </div>
                     </div>

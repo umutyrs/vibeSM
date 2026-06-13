@@ -4,7 +4,7 @@ import { CardFooter } from "@/components/ui/card";
 import { ApiOauthCallbackErrorResp } from "@shared/authApiTypes";
 import { ArrowLeftIcon } from "lucide-react";
 import { Link } from "wouter";
-
+import { useTranslation } from "@/hooks/translator";
 
 //Shortcut component
 function ErrorText({ children }: { children: React.ReactNode }) {
@@ -13,70 +13,88 @@ function ErrorText({ children }: { children: React.ReactNode }) {
             {children}
         </p>
     );
-};
+}
 
 export type AuthErrorData = ApiOauthCallbackErrorResp & { returnTo?: string };
 type AuthErrorProps = {
     error: AuthErrorData;
 };
 
-
 /**
  * Display OAuth errors in a user-friendly way.
  */
 export function AuthError({ error }: AuthErrorProps) {
+    const { t } = useTranslation();
     error.returnTo = error.returnTo ?? '/login';
     let titleNode: React.ReactNode = null;
     let bodyNode: React.ReactNode = null;
     if ('errorTitle' in error) {
-        titleNode = error.errorTitle
+        titleNode = error.errorTitle;
         bodyNode = <ErrorText>{error.errorMessage}</ErrorText>;
     } else if (error.errorCode === 'invalid_session') {
-        titleNode = 'Invalid Browser Session.';
-        bodyNode = <ErrorText>
-            You may have restarted vibeSM right before entering this page. <br />
-            Please return and try again.
-        </ErrorText>
+        titleNode = t('web.auth_error.invalid_session_title');
+        bodyNode = (
+            <ErrorText>
+                {t('web.auth_error.invalid_session_desc_1')} <br />
+                {t('web.auth_error.invalid_session_desc_2')}
+            </ErrorText>
+        );
     } else if (error.errorCode === 'clock_desync') {
-        titleNode = 'Please Update/Synchronize your VPS clock.';
-        bodyNode = <ErrorText>
-            Failed to login because this host's time is wrong. Please make sure to synchronize it with the internet.
-        </ErrorText>
+        titleNode = t('web.auth_error.clock_desync_title');
+        bodyNode = (
+            <ErrorText>
+                {t('web.auth_error.clock_desync_desc')}
+            </ErrorText>
+        );
     } else if (error.errorCode === 'timeout') {
-        titleNode = 'Connection to FiveM servers timed out.';
-        bodyNode = <ErrorText>
-            Please try again or login using your existing username and backup password.
-        </ErrorText>
+        titleNode = t('web.auth_error.timeout_title');
+        bodyNode = (
+            <ErrorText>
+                {t('web.auth_error.timeout_desc')}
+            </ErrorText>
+        );
     } else if (error.errorCode === 'end_user_aborted') {
-        titleNode = 'Login Aborted';
-        bodyNode = <ErrorText>
-            The Cfx.re login process was aborted. <br />
-            Return to the login page to try again.
-        </ErrorText>
+        titleNode = t('web.auth_error.login_aborted_title');
+        bodyNode = (
+            <ErrorText>
+                {t('web.auth_error.login_aborted_desc_1')} <br />
+                {t('web.auth_error.login_aborted_desc_2')}
+            </ErrorText>
+        );
     } else if (error.errorCode === 'end_user_logout') {
-        titleNode = 'Login Aborted';
-        bodyNode = <ErrorText>
-            The Cfx.re login process was aborted because you logged out of the Cfx.re account. <br />
-            Return to the login page to try again.
-        </ErrorText>
+        titleNode = t('web.auth_error.login_aborted_title');
+        bodyNode = (
+            <ErrorText>
+                {t('web.auth_error.login_logout_desc_1')} <br />
+                {t('web.auth_error.login_logout_desc_2')}
+            </ErrorText>
+        );
     } else if (error.errorCode === 'master_already_set') {
-        titleNode = 'Master Account Already Set';
-        bodyNode = <ErrorText>
-            Please go back to the login page to continue. <br />
-        </ErrorText>
+        titleNode = t('web.auth_error.master_set_title');
+        bodyNode = (
+            <ErrorText>
+                {t('web.auth_error.master_set_desc')}
+            </ErrorText>
+        );
     } else if (error.errorCode === 'not_admin') {
         const fivemId = error.errorContext?.identifier ?? 'unknown';
         const fivemName = error.errorContext?.name ?? 'unknown';
-        titleNode = `The Cfx.re account '${fivemName}' is not an admin.`;
-        bodyNode = <ErrorText>
-            The account above with identifier <InlineCode>{fivemId}</InlineCode> is not assigned to any account registered on vibeSM. <br />
-            You can also try to login using your username and backup password.
-        </ErrorText>
+        titleNode = t('web.auth_error.not_admin_title', { name: fivemName });
+        bodyNode = (
+            <ErrorText>
+                {t('web.auth_error.not_admin_desc_1')}
+                <InlineCode>{fivemId}</InlineCode>
+                {t('web.auth_error.not_admin_desc_2')} <br />
+                {t('web.auth_error.not_admin_desc_3')}
+            </ErrorText>
+        );
     } else {
-        titleNode = 'Unknown Error:';
-        bodyNode = <div className="text-left rounded-sm text-muted-foreground bg-muted p-1">
-            <pre className="text-left whitespace-pre-wrap">{JSON.stringify(error, null, 2)}</pre>
-        </div>
+        titleNode = t('web.auth_error.unknown_error_title');
+        bodyNode = (
+            <div className="text-left rounded-sm text-muted-foreground bg-muted p-1">
+                <pre className="text-left whitespace-pre-wrap">{JSON.stringify(error, null, 2)}</pre>
+            </div>
+        );
     }
 
     return (
@@ -89,14 +107,13 @@ export function AuthError({ error }: AuthErrorProps) {
                 <Link href={error.returnTo} asChild>
                     <Button className="x">
                         <ArrowLeftIcon className="inline mr-2 h-4 w-4" />
-                        Try Again
+                        {t('web.auth_error.try_again')}
                     </Button>
                 </Link>
             </CardFooter>
         </div>
-    )
+    );
 }
-
 
 /**
  * Check the URL search params for common OAuth errors and return them.
@@ -110,22 +127,18 @@ export const checkCommonOauthErrors = () => {
     } else if (errorCode === 'access_denied' && errorDescription === 'End-User aborted interaction (logout)') {
         return { errorCode: 'end_user_logout' };
     }
-}
+};
 
-
-/**
- * Process fetch errors and return a common error object.
- */
-export const processFetchError = (error: any) => {
+export const processFetchError = (error: any, t: (key: string) => string) => {
     if (error.message?.startsWith('NetworkError')) {
         return {
-            errorTitle: 'Network Error',
-            errorMessage: 'If you closed vibeSM, please restart it and try again.',
+            errorTitle: t('web.auth_error.network_error'),
+            errorMessage: t('web.auth_error.restart_desc'),
         };
     } else {
         return {
-            errorTitle: 'Unknown Error',
+            errorTitle: t('web.auth_error.unknown_error'),
             errorMessage: error.message ?? '😵',
         };
     }
-}
+};

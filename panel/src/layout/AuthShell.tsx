@@ -91,7 +91,7 @@ export default function AuthShell() {
                         </a>
                     ) : null}
                     <a
-                        href='https://discord.gg/uAmsGa2'
+                        href='https://dsc.gg/vibeSM'
                         onClick={handleExternalLinkClick}
                         target='_blank'
                         className='w-48 h-16 relative group'

@@ -10,15 +10,18 @@ import { AutosizeTextarea, AutosizeTextAreaRef } from "@/components/ui/autosize-
 import SettingsCardShell from "../SettingsCardShell"
 import { txToast } from "@/components/TxToaster"
 import consts from "@shared/consts"
+import { useTranslation } from "@/hooks/translator"
 
 
 export const pageConfigs = {
     whitelistMode: getPageConfig('whitelist', 'mode'),
     rejectionMessage: getPageConfig('whitelist', 'rejectionMessage'),
     discordRoles: getPageConfig('whitelist', 'discordRoles'),
+    allowlistInstructions: getPageConfig('whitelist', 'allowlistInstructions'),
 } as const;
 
 export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardProps) {
+    const { t } = useTranslation();
     const [states, dispatch] = useReducer(
         configsReducer<typeof pageConfigs>,
         null,
@@ -36,6 +39,7 @@ export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardPr
     //Refs for configs that don't use state
     const rejectionMessageRef = useRef<AutosizeTextAreaRef | null>(null);
     const discordRolesRef = useRef<HTMLInputElement | null>(null);
+    const allowlistInstructionsRef = useRef<HTMLInputElement | null>(null);
 
     //Marshalling Utils
     const inputArrayUtil = {
@@ -52,6 +56,7 @@ export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardPr
         const overwrites = {
             rejectionMessage: rejectionMessageRef.current?.textArea.value,
             discordRoles: currDiscordRoles,
+            allowlistInstructions: allowlistInstructionsRef.current?.value,
         };
 
         const res = getConfigDiff(cfg, states, overwrites, false);
@@ -69,9 +74,9 @@ export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardPr
             && localConfigs.whitelist.rejectionMessage.length > 512
         ) {
             return txToast.error({
-                title: 'The Whitelist Rejection Message is too big.',
+                title: t('web.settings.whitelist.val_rejection_title'),
                 md: true,
-                msg: 'The message must be 512 characters or less.',
+                msg: t('web.settings.whitelist.val_rejection_msg'),
             });
         }
         if (
@@ -80,8 +85,8 @@ export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardPr
         ) {
             if (pageCtx.apiData?.storedConfigs.discordBot?.enabled !== true) {
                 return txToast.warning({
-                    title: 'Discord Bot is required.',
-                    msg: 'You need to enable the Discord Bot in the Discord tab to use Discord-based whitelist modes.',
+                    title: t('web.settings.whitelist.val_bot_required_title'),
+                    msg: t('web.settings.whitelist.val_bot_required_msg'),
                 });
             }
             if (
@@ -92,8 +97,8 @@ export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardPr
                 )
             ) {
                 return txToast.warning({
-                    title: 'Discord Roles are required.',
-                    msg: 'You need to specify at least one Discord Role ID to use the "Discord Server Roles" whitelist mode.',
+                    title: t('web.settings.whitelist.val_roles_required_title'),
+                    msg: t('web.settings.whitelist.val_roles_required_msg'),
                 });
             }
         }
@@ -103,9 +108,9 @@ export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardPr
                 .map(x => `- \`${x.slice(0, 20)}\``);
             if (invalidRoles.length) {
                 return txToast.error({
-                    title: 'Invalid Discord Role ID(s).',
+                    title: t('web.settings.whitelist.val_invalid_roles_title'),
                     md: true,
-                    msg: 'The following Discord Role ID(s) are invalid: \n' + invalidRoles.join('\n'),
+                    msg: t('web.settings.whitelist.val_invalid_roles_msg', { roles: invalidRoles.join('\n') }),
                 });
             }
         }
@@ -118,7 +123,7 @@ export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardPr
             pageCtx={pageCtx}
             onClickSave={handleOnSave}
         >
-            <SettingItem label="Whitelist Mode">
+            <SettingItem label={t('web.settings.whitelist.label')}>
                 <RadioGroup
                     value={states.whitelistMode}
                     onValueChange={cfg.whitelistMode.state.set as any}
@@ -127,59 +132,57 @@ export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardPr
                     <BigRadioItem
                         groupValue={states.whitelistMode}
                         value="disabled"
-                        title="Disabled"
-                        desc="No whitelist status will be checked by vibeSM."
+                        title={t('web.settings.whitelist.mode_disabled')}
+                        desc={t('web.settings.whitelist.mode_disabled_desc')}
                     />
                     <BigRadioItem
                         groupValue={states.whitelistMode}
                         value="adminOnly"
-                        title="Admin-only (maintenance mode)"
+                        title={t('web.settings.whitelist.mode_admin')}
                         desc={(<>
-                            Will only allow server join if your <InlineCode>fivem:</InlineCode> or <InlineCode>discord:</InlineCode> identifiers are attached to a vibeSM administrator. Also known as maintenance mode.
+                            {t('web.settings.whitelist.mode_admin_desc1')}<InlineCode>fivem:</InlineCode> or <InlineCode>discord:</InlineCode>{t('web.settings.whitelist.mode_admin_desc2')}
                         </>)}
                     />
                     <BigRadioItem
                         groupValue={states.whitelistMode}
                         value="discordMember"
-                        title="Discord Server Member"
+                        title={t('web.settings.whitelist.mode_discord_member')}
                         desc={(<>
-                            Checks if the player joining has a <InlineCode>discord:</InlineCode> identifier and is present in the Discord server configured in the Discord Tab.
+                            {t('web.settings.whitelist.mode_discord_member_desc1')}<InlineCode>discord:</InlineCode>{t('web.settings.whitelist.mode_discord_member_desc2')}
                         </>)}
                     />
                     <BigRadioItem
                         groupValue={states.whitelistMode}
                         value="discordRoles"
-                        title="Discord Server Roles"
+                        title={t('web.settings.whitelist.mode_discord_roles')}
                         desc={(<>
-                            Checks if the player joining has a <InlineCode>discord:</InlineCode> identifier and is present in the Discord server configured in the Discord Tab and has at least one of the roles specified below.
+                            {t('web.settings.whitelist.mode_discord_roles_desc1')}<InlineCode>discord:</InlineCode>{t('web.settings.whitelist.mode_discord_roles_desc2')}
                         </>)}
                     />
                     <BigRadioItem
                         groupValue={states.whitelistMode}
                         value="approvedLicense"
-                        title="Approved License"
+                        title={t('web.settings.whitelist.mode_approved')}
                         desc={(<>
-                            The player <InlineCode>license:</InlineCode> identifier must be whitelisted by a vibeSM administrator. This can be done through the <TxAnchor href="/whitelist">Whitelist page</TxAnchor>, or the <InlineCode>/whitelist</InlineCode> Discord bot slash command.
+                            {t('web.settings.whitelist.mode_approved_desc1')}<InlineCode>license:</InlineCode>{t('web.settings.whitelist.mode_approved_desc2')}<TxAnchor href="/whitelist">{t('web.settings.whitelist.mode_approved_desc3')}</TxAnchor>{t('web.settings.whitelist.mode_approved_desc4')}<InlineCode>/whitelist</InlineCode>{t('web.settings.whitelist.mode_approved_desc5')}
                         </>)}
                     />
                     <BigRadioItem
                         groupValue={states.whitelistMode}
                         value="external"
-                        title="External Allowlist Resource"
-                        desc={(<>
-                            Select this option if you are using an external allowlist system to manage which players can join the server.
-                        </>)}
+                        title={t('web.settings.whitelist.mode_external')}
+                        desc={t('web.settings.whitelist.mode_external_desc')}
                     />
                 </RadioGroup>
                 <SettingItemDesc>
-                    <strong>Note:</strong> Players will see "Allowlist Enabled" icon in the server list.
+                    <strong>{t('web.settings.whitelist.note')}</strong>{t('web.settings.whitelist.note_desc')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Whitelist Rejection Message" htmlFor={cfg.rejectionMessage.eid} showOptional>
+            <SettingItem label={t('web.settings.whitelist.rejection_label')} htmlFor={cfg.rejectionMessage.eid} showOptional>
                 <AutosizeTextarea
                     id={cfg.rejectionMessage.eid}
                     ref={rejectionMessageRef}
-                    placeholder='Please join http://discord.gg/example and request to be whitelisted.'
+                    placeholder={t('web.settings.whitelist.rejection_placeholder')}
                     defaultValue={cfg.rejectionMessage.initialValue}
                     onInput={updatePageState}
                     autoComplete="off"
@@ -188,23 +191,36 @@ export default function ConfigCardWhitelist({ cardCtx, pageCtx }: SettingsCardPr
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    Optional message to display to a player on the rejection message that shows when they try to connect while not being whitelisted. <br />
-                    If you have a Discord whitelisting process, include here a invite link.
+                    {t('web.settings.whitelist.rejection_desc1')} <br />
+                    {t('web.settings.whitelist.rejection_desc2')}
                 </SettingItemDesc>
             </SettingItem>
-            <SettingItem label="Whitelisted Discord Roles" htmlFor={cfg.discordRoles.eid}>
+            <SettingItem label={t('web.settings.whitelist.allowlist_instructions_label')} htmlFor={cfg.allowlistInstructions.eid} showOptional>
                 <Input
-                    id={cfg.discordRoles.eid}
-                    ref={discordRolesRef}
-                    defaultValue={inputArrayUtil.toUi(cfg.discordRoles.initialValue)}
-                    placeholder="000000000000000000, 000000000000000000"
+                    id={cfg.allowlistInstructions.eid}
+                    ref={allowlistInstructionsRef}
+                    defaultValue={cfg.allowlistInstructions.initialValue}
+                    placeholder={t('web.settings.whitelist.allowlist_instructions_placeholder')}
                     onInput={updatePageState}
                     disabled={pageCtx.isReadOnly}
                 />
                 <SettingItemDesc>
-                    The ID of the Discord roles that are whitelisted to join the server. <br />
-                    This field supports multiple roles, separated by comma. <br />
-                    <strong>Note:</strong> Requires the whitelist mode to be set to "Discord Server Roles".
+                    {t('web.settings.whitelist.allowlist_instructions_desc1')}<InlineCode>sv_allowlistInstructions</InlineCode>{t('web.settings.whitelist.allowlist_instructions_desc2')}
+                </SettingItemDesc>
+            </SettingItem>
+            <SettingItem label={t('web.settings.whitelist.discord_roles_label')} htmlFor={cfg.discordRoles.eid}>
+                <Input
+                    id={cfg.discordRoles.eid}
+                    ref={discordRolesRef}
+                    defaultValue={inputArrayUtil.toUi(cfg.discordRoles.initialValue)}
+                    placeholder={t('web.settings.whitelist.discord_roles_placeholder')}
+                    onInput={updatePageState}
+                    disabled={pageCtx.isReadOnly}
+                />
+                <SettingItemDesc>
+                    {t('web.settings.whitelist.discord_roles_desc1')} <br />
+                    {t('web.settings.whitelist.discord_roles_desc2')} <br />
+                    <strong>{t('web.settings.whitelist.discord_roles_desc3')}</strong>{t('web.settings.whitelist.discord_roles_desc4')}
                 </SettingItemDesc>
             </SettingItem>
         </SettingsCardShell>

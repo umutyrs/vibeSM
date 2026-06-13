@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { CheckIcon, Trash2Icon, PlusIcon, DownloadIcon, UploadIcon, PaintbrushIcon, CopyIcon, RefreshCw } from "lucide-react";
 import { txToast } from "@/components/TxToaster";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslation } from "@/hooks/translator";
 
 // Types
 type ConfigCardThemeProps = {
@@ -112,6 +113,7 @@ function rgbToCmyk(r: number, g: number, b: number) {
 }
 
 export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemeProps) {
+    const { t } = useTranslation();
     const { theme: currentTheme, setTheme } = useTheme();
     const [availableThemes, setAvailableThemes] = useState(() => getAvailableThemesInfo());
     
@@ -207,21 +209,21 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
         saveClientThemes(clientThemes);
         reloadThemes();
         setTheme(cleanName);
-        txToast.success(`Applied community theme "${theme.name}"!`);
+        txToast.success(t('web.settings.theme.apply_theme_toast', { name: theme.name }));
     };
 
     // Share a theme to the community
     const handleShareTheme = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!themeToShare) {
-            return txToast.error("Please select a theme to share.");
+            return txToast.error(t('web.settings.theme.err_select_share'));
         }
         if (!shareAuthor.trim()) {
-            return txToast.error("Please enter your name as the author.");
+            return txToast.error(t('web.settings.theme.err_enter_author'));
         }
 
         const match = [...presetThemes, ...getClientThemes()].find(t => t.name === themeToShare);
-        if (!match) return txToast.error("Theme not found.");
+        if (!match) return txToast.error(t('web.settings.theme.err_not_found'));
 
         const hslToHexStr = (hslStr: string) => {
             const parts = hslStr.trim().split(/\s+/);
@@ -261,12 +263,12 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                 setCommunityThemes(prev => [...prev, data]);
                 setShareAuthor("");
                 setThemeToShare("");
-                txToast.success("Theme shared to the community successfully!");
+                txToast.success(t('web.settings.theme.share_success'));
             } else {
-                txToast.error("Failed to share theme.");
+                txToast.error(t('web.settings.theme.err_failed_share'));
             }
         } catch (e) {
-            txToast.error("Failed to connect to community backend database.");
+            txToast.error(t('web.settings.theme.err_connect_comm'));
         }
     };
     
@@ -302,15 +304,15 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
         e.preventDefault();
         const cleanName = themeName.toLowerCase().replace(/[^a-z0-9]/g, "-").trim();
         if (!cleanName) {
-            return txToast.error("Please enter a valid unique theme name.");
+            return txToast.error(t('web.settings.theme.err_valid_name'));
         }
         if (!themeLabel.trim()) {
-            return txToast.error("Please enter a theme label.");
+            return txToast.error(t('web.settings.theme.err_enter_label'));
         }
 
         const clientThemes = getClientThemes();
         if (clientThemes.some(t => t.name === cleanName) || presetThemes.some(t => t.name === cleanName) || ['dark', 'light'].includes(cleanName)) {
-            return txToast.error("A theme with this name already exists.");
+            return txToast.error(t('web.settings.theme.err_already_exists'));
         }
 
         // Massaging HSL variables to support secondary & ring values automatically
@@ -331,7 +333,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
         
         // Apply instantly
         setTheme(cleanName);
-        txToast.success(`Theme "${newTheme.label}" created and applied successfully!`);
+        txToast.success(t('web.settings.theme.theme_created_toast', { label: newTheme.label }));
 
         // Reset Creator fields
         setThemeName("");
@@ -353,7 +355,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
         const updatedThemes = clientThemes.filter(t => t.name !== name);
         saveClientThemes(updatedThemes);
         reloadThemes();
-        txToast.success(`Theme "${themeToDelete.label}" deleted.`);
+        txToast.success(t('web.settings.theme.deleted_toast', { name: themeToDelete.label }));
     };
 
     // Import Theme via JSON
@@ -361,13 +363,13 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
         try {
             const parsed = JSON.parse(importJson.trim());
             if (!parsed.name || !parsed.style || typeof parsed.isDark !== 'boolean') {
-                throw new Error("Missing required fields: 'name', 'isDark', 'style'.");
+                throw new Error(t('web.settings.theme.err_missing_fields'));
             }
             const cleanName = parsed.name.toLowerCase().replace(/[^a-z0-9]/g, "-").trim();
             
             const clientThemes = getClientThemes();
             if (clientThemes.some(t => t.name === cleanName) || presetThemes.some(t => t.name === cleanName) || ['dark', 'light'].includes(cleanName)) {
-                return txToast.error("A theme with this name already exists.");
+                return txToast.error(t('web.settings.theme.err_already_exists'));
             }
 
             const newTheme: CustomThemeType = {
@@ -382,9 +384,9 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
             reloadThemes();
             setTheme(cleanName);
             setImportJson("");
-            txToast.success(`Theme "${newTheme.label}" imported successfully!`);
+            txToast.success(t('web.settings.theme.theme_imported_success', { label: newTheme.label }));
         } catch (error) {
-            txToast.error(`Failed to parse theme JSON: ${(error as Error).message}`);
+            txToast.error(t('web.settings.theme.err_parse_json', { error: (error as Error).message }));
         }
     };
 
@@ -464,7 +466,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
     // Copy to clipboard helper
     const handleCopyHex = () => {
         navigator.clipboard.writeText(currentColorValues.hex.toUpperCase());
-        txToast.success(`HEX Color ${currentColorValues.hex.toUpperCase()} copied to clipboard!`);
+        txToast.success(t('web.settings.theme.copied_hex_toast', { hex: currentColorValues.hex.toUpperCase() }));
     };
 
     return (
@@ -473,11 +475,11 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
             pageCtx={pageCtx}
             onClickSave={() => {
                 pageCtx.setCardPendingSave(null);
-                txToast.success("Theme settings saved.");
+                txToast.success(t('web.settings.theme.saved_toast'));
             }}
         >
             {/* 1. Theme Presets and Selector */}
-            <SettingItem label="Active Theme" required>
+            <SettingItem label={t('web.theme.active_theme')} required>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {availableThemes.map((theme) => {
                         const isActive = currentTheme === theme.name;
@@ -494,8 +496,8 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                                 <div className="flex flex-col gap-0.5 select-none">
                                     <span className="font-semibold text-sm text-foreground">{theme.label}</span>
                                     <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                                        {theme.isDark ? "Dark Scheme" : "Light Scheme"}
-                                        {theme.isClient && " (Custom)"}
+                                        {theme.isDark ? t('web.settings.theme.dark_scheme') : t('web.settings.theme.light_scheme')}
+                                        {theme.isClient && t('web.settings.theme.custom_suffix')}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
@@ -506,7 +508,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                                             <button
                                                 onClick={(e) => handleDeleteTheme(theme.name, e)}
                                                 className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-rose-500 transition-opacity p-1 rounded hover:bg-white/5"
-                                                title="Delete Custom Theme"
+                                                title={t('web.settings.theme.delete_theme_title')}
                                             >
                                                 <Trash2Icon className="size-4" />
                                             </button>
@@ -518,20 +520,20 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                     })}
                 </div>
                  <SettingItemDesc>
-                    Choose from standard built-in themes, customized preset themes, or click to load custom themes stored in this browser session.
+                    {t('web.settings.theme.active_theme_desc')}
                 </SettingItemDesc>
             </SettingItem>
 
             {/* Community Themes Gallery */}
-            <SettingItem label="Community Themes Library">
+            <SettingItem label={t('web.settings.theme.library_title')}>
                 {loadingCommunity ? (
                     <div className="py-6 text-center text-muted-foreground flex flex-col items-center justify-center gap-1.5 select-none">
                         <RefreshCw className="size-5 animate-spin text-primary" />
-                        <span className="text-xs">Loading community themes database...</span>
+                        <span className="text-xs">{t('web.settings.theme.loading_community')}</span>
                     </div>
                 ) : communityThemes.length === 0 ? (
                     <div className="py-4 text-center text-muted-foreground text-xs select-none">
-                        No community themes uploaded yet. Be the first to share one!
+                        {t('web.settings.theme.no_themes')}
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -550,18 +552,18 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                                     <div className="flex flex-col gap-0.5 select-none text-left">
                                         <span className="font-bold text-sm text-foreground truncate">{theme.name}</span>
                                         <span className="text-[10px] text-muted-foreground truncate">
-                                            by {theme.author}
+                                            {t('web.settings.theme.by_author', { author: theme.author })}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between pt-2 border-t border-border/25">
                                         <div className="flex gap-1.5">
-                                            <span className="size-3.5 rounded-full border border-foreground/10" style={{ backgroundColor: theme.canvas }} title="Canvas" />
-                                            <span className="size-3.5 rounded-full border border-foreground/10" style={{ backgroundColor: theme.primary }} title="Accent" />
+                                            <span className="size-3.5 rounded-full border border-foreground/10" style={{ backgroundColor: theme.canvas }} title={t('web.settings.theme.canvas')} />
+                                            <span className="size-3.5 rounded-full border border-foreground/10" style={{ backgroundColor: theme.primary }} title={t('web.settings.theme.accent')} />
                                         </div>
                                         <span className={`text-[10px] font-semibold transition-colors ${
                                             isApplied ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                                         }`}>
-                                            {isApplied ? "Applied" : "Apply"}
+                                            {isApplied ? t('web.settings.theme.applied') : t('web.settings.theme.apply')}
                                         </span>
                                     </div>
                                 </div>
@@ -570,32 +572,32 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                     </div>
                 )}
                 <SettingItemDesc>
-                    Browse, download, and apply theme customization packages created and shared by other vibeSM community administrators.
+                    {t('web.settings.theme.comm_themes_desc')}
                 </SettingItemDesc>
             </SettingItem>
 
             {/* Share custom theme to community */}
-            <SettingItem label="Share Theme to Community">
+            <SettingItem label={t('web.settings.theme.share_theme_label')}>
                 <form onSubmit={handleShareTheme} className="bg-foreground/5 border border-border/40 rounded-xl p-4 space-y-4 shadow-sm">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5 text-left">
-                            <Label htmlFor="share-theme-select" className="text-xs text-foreground/80">Select Theme to Share</Label>
+                            <Label htmlFor="share-theme-select" className="text-xs text-foreground/80">{t('web.settings.theme.share_select_label')}</Label>
                             <Select value={themeToShare} onValueChange={setThemeToShare}>
                                 <SelectTrigger id="share-theme-select">
-                                    <SelectValue placeholder="Select one of your custom themes..." />
+                                    <SelectValue placeholder={t('web.settings.theme.share_select_placeholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {[...presetThemes, ...getClientThemes()].map(t => (
-                                        <SelectItem key={t.name} value={t.name}>{t.label || t.name}</SelectItem>
+                                    {[...presetThemes, ...getClientThemes()].map(tOpt => (
+                                        <SelectItem key={tOpt.name} value={tOpt.name}>{tOpt.label || tOpt.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-1.5 text-left">
-                            <Label htmlFor="share-author-name" className="text-xs text-foreground/80">Author Name</Label>
+                            <Label htmlFor="share-author-name" className="text-xs text-foreground/80">{t('web.settings.theme.share_author_label')}</Label>
                             <Input
                                 id="share-author-name"
-                                placeholder="Your Name or Server Name"
+                                placeholder={t('web.settings.theme.share_author_placeholder')}
                                 value={shareAuthor}
                                 onChange={e => setShareAuthor(e.target.value)}
                                 className="h-9 bg-background/50 border-border/40"
@@ -611,21 +613,21 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                             className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-8.5 px-4 transition-all"
                         >
                             <UploadIcon className="size-4 mr-1.5 animate-pulse" />
-                            Upload & Share Theme
+                            {t('web.settings.theme.share_btn')}
                         </Button>
                     </div>
                 </form>
                 <SettingItemDesc>
-                    Publish your customized themes directly to the shared community catalog for other administrators worldwide to fetch and enjoy.
+                    {t('web.settings.theme.share_desc')}
                 </SettingItemDesc>
             </SettingItem>
 
             {/* 2. Visual Theme Creator Studio */}
-            <SettingItem label="Theme Creator">
+            <SettingItem label={t('web.theme.creator')}>
                 <form onSubmit={handleCreateTheme} className="bg-foreground/5 border border-border/40 rounded-xl p-4 md:p-5 space-y-5">
                     <h4 className="text-xs font-bold uppercase tracking-widest text-foreground/80 pb-2 border-b border-border/40 flex items-center gap-1.5 select-none">
                         <PaintbrushIcon className="size-4 text-primary" />
-                        Create Dynamic Theme
+                        {t('web.theme.create_dynamic')}
                     </h4>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -634,16 +636,16 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                             {/* Color Variable Selection list */}
                             <div className="flex flex-col gap-1.5">
                                 <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground select-none">
-                                    Edit Color Variable
+                                    {t('web.theme.variable_to_edit')}
                                 </Label>
                                 <div className="grid grid-cols-3 gap-1.5 select-none">
                                     {[
-                                        { name: "primary", label: "Primary" },
-                                        { name: "background", label: "Canvas" },
-                                        { name: "card", label: "Card" },
-                                        { name: "foreground", label: "Text" },
-                                        { name: "card-foreground", label: "Card Text" },
-                                        { name: "border", label: "Borders" }
+                                        { name: "primary", label: t('web.settings.theme.creator_accent_label') },
+                                        { name: "background", label: t('web.settings.theme.creator_bg_label') },
+                                        { name: "card", label: t('web.settings.theme.creator_card_label') },
+                                        { name: "foreground", label: t('web.settings.theme.creator_fg_label') },
+                                        { name: "card-foreground", label: t('web.settings.theme.creator_card_fg_label') },
+                                        { name: "border", label: t('web.settings.theme.creator_border_label') }
                                     ].map((v) => {
                                         const isSel = activeVariable === v.name;
                                         return (
@@ -714,7 +716,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                             <div className="bg-background/80 border border-border/40 rounded-lg p-3 space-y-2 select-none shadow-md">
                                 {/* HEX row with copy button */}
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">HEX Format</span>
+                                    <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">{t('web.settings.theme.hex_format')}</span>
                                     <div className="flex items-center gap-1.5">
                                         <div className="flex-grow h-8 bg-foreground/5 border border-border/40 rounded-md flex items-center justify-center font-mono text-xs text-foreground font-bold uppercase tracking-widest">
                                             {currentColorValues.hex}
@@ -725,7 +727,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                                             size="sm"
                                             variant="ghost"
                                             className="h-8 w-8 p-0 border border-border/40 hover:bg-foreground/5"
-                                            title="Copy HEX color"
+                                            title={t('web.settings.theme.copy_hex_color')}
                                         >
                                             <CopyIcon className="size-3.5 text-muted-foreground hover:text-foreground" />
                                         </Button>
@@ -767,7 +769,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="theme-name" className="text-xs text-foreground/80">Theme ID (Lowercase, no spaces)</Label>
+                                        <Label htmlFor="theme-name" className="text-xs text-foreground/80">{t('web.settings.theme.theme_id_label')}</Label>
                                         <Input
                                             id="theme-name"
                                             placeholder="my-neon-theme"
@@ -778,7 +780,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="theme-label" className="text-xs text-foreground/80">Display Label</Label>
+                                        <Label htmlFor="theme-label" className="text-xs text-foreground/80">{t('web.settings.theme.display_label')}</Label>
                                         <Input
                                             id="theme-label"
                                             placeholder="My Neon Theme"
@@ -797,23 +799,23 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                                         onCheckedChange={setIsDarkTheme}
                                     />
                                     <Label htmlFor="theme-dark-scheme" className="text-xs text-foreground/80 cursor-pointer">
-                                        Use Dark Scheme styling (recommends dark text on light accents)
+                                        {t('web.settings.theme.creator_dark_scheme_label')}
                                     </Label>
                                 </div>
 
                                 {/* Raw HSL Input Field list */}
                                 <div className="space-y-1.5">
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block select-none">
-                                        Active Variable HSL Configuration
+                                        {t('web.settings.theme.creator_hsl_title')}
                                     </span>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                         {[
-                                            { name: "primary", label: "Primary Accent" },
-                                            { name: "background", label: "Core Background" },
-                                            { name: "card", label: "Card Backdrop" },
-                                            { name: "foreground", label: "Text/Foreground" },
-                                            { name: "card-foreground", label: "Card Text" },
-                                            { name: "border", label: "Hairline Borders" }
+                                            { name: "primary", label: t('web.settings.theme.creator_accent_label') },
+                                            { name: "background", label: t('web.settings.theme.creator_bg_label') },
+                                            { name: "card", label: t('web.settings.theme.creator_card_label') },
+                                            { name: "foreground", label: t('web.settings.theme.creator_fg_label') },
+                                            { name: "card-foreground", label: t('web.settings.theme.creator_card_fg_label') },
+                                            { name: "border", label: t('web.settings.theme.creator_border_label') }
                                         ].map((variable) => {
                                             const isEditing = activeVariable === variable.name;
                                             return (
@@ -854,25 +856,25 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                                     className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-9 px-5 active:scale-95 transition-all shadow-md"
                                 >
                                     <PlusIcon className="size-4 mr-1.5" />
-                                    Create & Apply Theme
+                                    {t('web.settings.theme.creator_btn')}
                                 </Button>
                             </div>
                         </div>
                     </div>
                 </form>
                 <SettingItemDesc>
-                    Tweak color variable parameters visually in HSL, HSV, or HEX units to build a premium custom dynamic theme. Outlines, shadows, and secondary configurations are mathematically balanced automatically.
+                    {t('web.settings.theme.creator_desc')}
                 </SettingItemDesc>
             </SettingItem>
 
             {/* 3. JSON Import/Export */}
-            <SettingItem label="Import & Export Theme">
+            <SettingItem label={t('web.settings.theme.import_export_label')}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Export Active Theme */}
                     <div className="space-y-2">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80 select-none">
                             <DownloadIcon className="size-4 text-primary" />
-                            Active Theme JSON (Export)
+                            {t('web.settings.theme.export_json_label')}
                         </div>
                         <Textarea
                             readOnly
@@ -880,12 +882,12 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                             onClick={(e) => {
                                 (e.target as HTMLTextAreaElement).select();
                                 navigator.clipboard.writeText(activeThemeJson);
-                                txToast.success("Theme JSON copied to clipboard!");
+                                txToast.success(t('web.settings.theme.theme_json_copied_toast'));
                             }}
                             className="h-32 text-2xs font-mono bg-background/50 border-border/40 hover:border-primary/20 focus:border-primary cursor-pointer transition-colors"
                         />
                         <span className="text-[10px] text-muted-foreground block select-none">
-                            Click inside the box to copy the active theme JSON setup to share with other vibeSM/txAdmin admins.
+                            {t('web.settings.theme.export_desc')}
                         </span>
                     </div>
 
@@ -893,7 +895,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                     <div className="space-y-2">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80 select-none">
                             <UploadIcon className="size-4 text-emerald-400" />
-                            Paste Theme JSON (Import)
+                            {t('web.settings.theme.import_json_label')}
                         </div>
                         <Textarea
                             placeholder='{"name": "custom", "isDark": true, "label": "Shared", "style": {...}}'
@@ -909,7 +911,7 @@ export default function ConfigCardTheme({ cardCtx, pageCtx }: ConfigCardThemePro
                                 disabled={!importJson.trim()}
                                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-7.5"
                             >
-                                Import Theme
+                                {t('web.settings.theme.import_btn')}
                             </Button>
                         </div>
                     </div>

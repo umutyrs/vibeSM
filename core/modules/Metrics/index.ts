@@ -49,7 +49,11 @@ export default class Metrics {
             pdlResetMsgPart = 'CFG Path';
         }
         if (pdlResetMsgPart) {
-            this.playerDrop.resetLog(`Server ${pdlResetMsgPart} changed.`);
+            const { vibeConfigStoreContext } = require('@core/vibeSM');
+            const serverId = vibeConfigStoreContext.getStore()?.serverId || 'primary';
+            this.playerDrop.resetLog(`Server ${pdlResetMsgPart} changed.`, serverId).catch((err) => {
+                console.error(`Failed to reset log for server ${serverId}: ${err.message}`);
+            });
         }
     }
 };

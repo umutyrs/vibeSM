@@ -15,6 +15,8 @@ import useSWR from "swr";
 import { alphanumeric } from 'nanoid-dictionary';
 import { customAlphabet } from "nanoid";
 import { PageHeader } from "@/components/page-header";
+import { useTranslation } from "@/hooks/translator";
+
 const nanoid = customAlphabet(alphanumeric, 21);
 
 
@@ -27,6 +29,7 @@ export type BanTemplatesInputData = {
 type DataUpdaterFunc = (prev: BanTemplatesDataType[]) => BanTemplatesDataType[];
 
 function BanTemplatesPageInner() {
+    const { t } = useTranslation();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [reasonInputDialogData, setReasonInputDialogData] = useState<BanTemplatesInputData | undefined>();
     const openConfirmDialog = useOpenConfirmDialog();
@@ -125,11 +128,11 @@ function BanTemplatesPageInner() {
         const toBeRemoved = swr.data.find((item) => item.id === id);
         if (!toBeRemoved) return;
         openConfirmDialog({
-            title: 'Remove Template',
-            actionLabel: 'Remove',
+            title: t('web.ban_templates.remove_template'),
+            actionLabel: t('web.ban_templates.remove'),
             confirmBtnVariant: 'destructive',
             message: <>
-                Are you sure you want to remove this ban template? <br />
+                {t('web.ban_templates.confirm_remove')} <br />
                 <blockquote className='opacity-70 italic border-l-4 pl-2'>
                     {toBeRemoved.reason}
                 </blockquote>
@@ -156,32 +159,32 @@ function BanTemplatesPageInner() {
     let statusNode: React.ReactNode;
     if (swr.error) {
         const retryFunc = () => swr.mutate();
-        const errMsg = swr?.error?.message ?? 'unknown error';
+        const errMsg = swr?.error?.message ?? t('web.ban_templates.unknown_error');
         statusNode = <div className="inline-flex flex-wrap gap-1">
-            <span className='text-destructive-inline'>Error loading: {errMsg}</span><br />
-            <button className='underline hover:text-accent' onClick={retryFunc}>Try again?</button>
+            <span className='text-destructive-inline'>{t('web.ban_templates.err_loading', { error: errMsg })}</span><br />
+            <button className='underline hover:text-accent' onClick={retryFunc}>{t('web.ban_templates.try_again')}</button>
         </div>
     } else if (isSaving) {
         statusNode = <span className="text-success-inlinex animate-pulse">
-            Saving...
+            {t('web.ban_templates.saving')}
         </span>
     } else if (saveError) {
         const retryFunc = () => {
             if (!swr.data) return;
             updateBackend(() => swr.data!);
         }
-        const errMsg = saveError ?? 'unknown error';
+        const errMsg = saveError ?? t('web.ban_templates.unknown_error');
         statusNode = <div className="inline-flex flex-wrap gap-1">
-            <span className='text-destructive-inline'>Error saving: {errMsg}</span><br />
-            <button className='underline hover:text-accent' onClick={retryFunc}>Try again?</button>
+            <span className='text-destructive-inline'>{t('web.ban_templates.err_saving', { error: errMsg })}</span><br />
+            <button className='underline hover:text-accent' onClick={retryFunc}>{t('web.ban_templates.try_again')}</button>
         </div>
     } else if (isSaveSuccessful) {
         statusNode = <span className="text-success-inline">
-            Saved.
+            {t('web.ban_templates.saved')}
         </span>
     } else if (swr.isLoading || swr.isValidating) {
         statusNode = <span className="text-muted-foreground">
-            Loading...
+            {t('web.ban_templates.loading')}
         </span>
     }
 
@@ -190,27 +193,27 @@ function BanTemplatesPageInner() {
     return <>
         <div className="space-y-4 w-full max-w-screen-lg mx-auto">
             <p className="px-2 md:px-0">
-                Here you can configure ban reasons and durations that will appear as dropdown options when banning a player. <br />
-                This is useful for common reasons that happen frequently, like violation of your server rules. <br />
+                {t('web.ban_templates.desc_para1')} <br />
+                {t('web.ban_templates.desc_para2')} <br />
                 {canEdit ? (
                     <span className="text-muted-foreground italic">
-                        TIP: You can also drag and drop to reorder the list. <br />
+                        {t('web.ban_templates.tip_drag')} <br />
                     </span>
                 ) : (
                     <span className="text-warning-inline">
-                        You need the <InlineCode className="text-warning-inline">Settings: Change</InlineCode> permission to edit these reasons.
+                        {t('web.ban_templates.perms_required_prefix')}<InlineCode className="text-warning-inline">{t('web.ban_templates.perms_settings_change')}</InlineCode>{t('web.ban_templates.perms_required_suffix')}
                     </span>
                 )}
             </p>
             <div className="space-y-2">
                 <div className="flex flex-wrap justify-between text-muted-foreground px-2 md:px-0">
-                    <span className="shrink-0">Configured reasons: {swr.data?.length ?? 0}</span>
+                    <span className="shrink-0">{t('web.ban_templates.configured_reasons', { count: swr.data?.length ?? 0 })}</span>
                     {statusNode}
                 </div>
 
                 {!swr.data && !saveError && (
                     <div className="text-muted-foreground text-lg md:text-2xl text-center my-4 px-2 md:px-0">
-                        <Loader2Icon className="inline animate-spin h-8" />Loading...
+                        <Loader2Icon className="inline animate-spin h-8" />{t('web.ban_templates.loading')}
                     </div>
                 )}
                 {swr.data && (
@@ -221,7 +224,7 @@ function BanTemplatesPageInner() {
                     >
                         {!swr.data.length ? (
                             <div className="text-muted-foreground text-lg md:text-2xl text-center my-4 px-2 md:px-0">
-                                No reasons configured yet.
+                                {t('web.ban_templates.no_reasons')}
                             </div>
                         ) : swr.data.map((item) => (
                             <DndSortableItem
@@ -254,12 +257,13 @@ function BanTemplatesPageInner() {
 
 
 export default function BanTemplatesPage() {
+    const { t } = useTranslation();
     return (
         <div className="w-full mb-10">
             <PageHeader
                 icon={<Settings2Icon />}
-                title="Ban Templates"
-                parentName="Settings"
+                title={t('web.ban_templates.title')}
+                parentName={t('web.ban_templates.parent_name')}
                 parentLink="/settings"
             />
             <div className="px-0 xs:px-3 md:px-0 flex flex-row gap-2 w-full">

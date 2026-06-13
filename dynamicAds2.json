@@ -14,5 +14,25 @@
     "mainZap": {
         "img": "https://i.postimg.cc/Y0JtSwY7/vibe-SM-banner.png",
         "url": "http://zap-hosting.com/vibeSM5"
+    },
+    "adModal": {
+        "title": "Select Your Destination",
+        "description": "Choose which of our premium roleplay servers you would like to explore.",
+        "servers": [
+            {
+                "name": "roleplayV",
+                "url": "https://roleplayv.de",
+                "subtext": "roleplayv.de",
+                "img": "https://i.postimg.cc/m29ZsVcn/roleplay-V-logo.png",
+                "color": "#a80a40"
+            },
+            {
+                "name": "ParadiseRP",
+                "url": "https://paradiserp.net",
+                "subtext": "paradiserp.net",
+                "img": "https://i.postimg.cc/y8RDB7P1/paradise-2000x635.png",
+                "color": "#d946ef"
+            }
+        ]
     }
 }

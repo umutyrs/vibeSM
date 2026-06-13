@@ -2,8 +2,8 @@ import { GaugeIcon, Loader2Icon, MemoryStickIcon, TimerIcon, TrendingUpIcon } fr
 import { memo, useMemo } from 'react';
 import { useAtomValue } from 'jotai';
 import { dashPerfCursorAtom, dashServerStatsAtom, dashSvRuntimeAtom, useGetDashDataAge } from './dashboardHooks';
-import { cn } from '@/lib/utils';
 import { dateToLocaleDateString, dateToLocaleTimeString, isDateToday } from '@/lib/dateTime';
+import { useTranslation } from '@/hooks/translator';
 
 //NOTE: null and undefined are semantically equal here
 type HostStatsDataProps = {
@@ -17,6 +17,7 @@ type HostStatsDataProps = {
 };
 
 const HostStatsData = memo(({ uptimePct, medianPlayerCount, fxsMemory, nodeMemory }: HostStatsDataProps) => {
+    const { t } = useTranslation();
     const uptimePart = uptimePct ? uptimePct.toFixed(2) + '%' : '--';
     const medianPlayerPart = medianPlayerCount ? Math.ceil(medianPlayerCount) : '--';
     const fxsPart = fxsMemory ? fxsMemory.toFixed(2) + 'MB' : '--';
@@ -39,7 +40,7 @@ const HostStatsData = memo(({ uptimePct, medianPlayerCount, fxsMemory, nodeMemor
             <div className="bg-white/5 border border-white/5 rounded-lg p-3 flex flex-col justify-between hover:bg-white/10 hover:-translate-y-0.5 transition-all duration-300 group select-none">
                 <div className="flex justify-between items-center text-primary group-hover:scale-105 transition-transform">
                     <TimerIcon className="size-4 stroke-[2.5]" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Uptime</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{t('web.dashboard.stats.uptime')}</span>
                 </div>
                 <span className="text-lg font-extrabold text-white tracking-tight mt-1 truncate">{uptimePart}</span>
             </div>
@@ -48,7 +49,7 @@ const HostStatsData = memo(({ uptimePct, medianPlayerCount, fxsMemory, nodeMemor
             <div className="bg-white/5 border border-white/5 rounded-lg p-3 flex flex-col justify-between hover:bg-white/10 hover:-translate-y-0.5 transition-all duration-300 group select-none">
                 <div className="flex justify-between items-center text-primary group-hover:scale-105 transition-transform">
                     <TrendingUpIcon className="size-4 stroke-[2.5]" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Median</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{t('web.dashboard.stats.median')}</span>
                 </div>
                 <span className="text-lg font-extrabold text-white tracking-tight mt-1 truncate">{medianPlayerPart}</span>
             </div>
@@ -57,7 +58,7 @@ const HostStatsData = memo(({ uptimePct, medianPlayerCount, fxsMemory, nodeMemor
             <div className="bg-white/5 border border-white/5 rounded-lg p-3 flex flex-col justify-between hover:bg-white/10 hover:-translate-y-0.5 transition-all duration-300 group select-none">
                 <div className="flex justify-between items-center text-primary group-hover:scale-105 transition-transform">
                     <MemoryStickIcon className="size-4 stroke-[2.5]" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">FXServer</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{t('web.dashboard.stats.fxserver')}</span>
                 </div>
                 <span className="text-lg font-extrabold text-white tracking-tight mt-1 truncate">{fxsPart}</span>
             </div>
@@ -69,7 +70,7 @@ const HostStatsData = memo(({ uptimePct, medianPlayerCount, fxsMemory, nodeMemor
             >
                 <div className="flex justify-between items-center text-primary group-hover:scale-105 transition-transform">
                     <MemoryStickIcon className="size-4 stroke-[2.5]" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Node.js</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{t('web.dashboard.stats.nodejs')}</span>
                 </div>
                 <span className={`text-lg font-extrabold text-white tracking-tight mt-1 truncate ${nodeCustomClass || ''}`}>{nodePart}</span>
             </div>
@@ -77,8 +78,8 @@ const HostStatsData = memo(({ uptimePct, medianPlayerCount, fxsMemory, nodeMemor
     );
 });
 
-
 export default function ServerStatsCard() {
+    const { t } = useTranslation();
     const pastStatsData = useAtomValue(dashServerStatsAtom);
     const svRuntimeData = useAtomValue(dashSvRuntimeAtom);
     const perfCursorData = useAtomValue(dashPerfCursorAtom);
@@ -107,16 +108,18 @@ export default function ServerStatsCard() {
             return {
                 fxsMemory: svRuntimeData.fxsMemory,
                 nodeMemory: svRuntimeData.nodeMemory,
-                titleTimeIndicator: dataAge.isStale ? '(minutes ago)' : '(live)',
+                titleTimeIndicator: dataAge.isStale ? t('web.dashboard.stats.minutes_ago') : t('web.dashboard.stats.live'),
             };
         }
-    }, [svRuntimeData, perfCursorData]);
+    }, [svRuntimeData, perfCursorData, t]);
 
     //Rendering
     let titleNode: React.ReactNode = null;
     let contentNode: React.ReactNode = null;
     if (displayData) {
-        titleNode = displayData.titleTimeIndicator;
+        titleNode = typeof displayData.titleTimeIndicator === 'string' 
+            ? ` (${displayData.titleTimeIndicator})` 
+            : <> {displayData.titleTimeIndicator}</>;
         contentNode = <HostStatsData
             fxsMemory={displayData.fxsMemory}
             medianPlayerCount={pastStatsData?.medianPlayerCount}
@@ -128,14 +131,14 @@ export default function ServerStatsCard() {
             <div className="size-full flex flex-col items-center justify-center">
                 <Loader2Icon className="animate-spin size-16 text-muted-foreground" />
             </div>
-        )
+        );
     }
 
     return (
         <div className="col-span-3 sm:col-span-1 2xl:col-span-2 min-w-52 py-3 px-5 flex flex-col glass-card text-card-foreground">
             <div className="flex flex-row items-center justify-between space-y-0 pb-3 text-muted-foreground border-b border-white/5 mb-3">
                 <h3 className="font-display font-semibold tracking-tight text-sm text-white line-clamp-1">
-                    Server Stats {titleNode}
+                    {t('web.dashboard.stats.title')}{titleNode}
                 </h3>
                 <div className='hidden xs:block text-primary'><GaugeIcon size="18" /></div>
             </div>
